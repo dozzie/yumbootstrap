@@ -33,6 +33,7 @@ yum.install('redhat-release') # to show how it works
 
 yum.install(['yum', '/usr/bin/db_load']) # needed for yum.fix_rpmdb()
 yum.fix_rpmdb()
+yum.clean()
 
 # packages:
 #   core:

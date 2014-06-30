@@ -33,10 +33,15 @@ class Yum:
     self.interactive = interactive
     self.yum_config_dir = os.path.join(self.chroot, 'etc/yumbootstrap.chroot')
     self.yum_config = os.path.join(self.yum_config_dir, 'yum.conf')
+    self.yum_cache_dir = '/var/cache/yum/yumbootstrap'
     self.has_key = False
     self.rpmdb_fixed = False
 
-    yum_conf_main = '[main]\nexactarch=1\nobsoletes=1\n'
+    yum_conf_main = \
+      '[main]\n' \
+      'exactarch=1\n' \
+      'obsoletes=1\n' \
+      'cachedir=%s\n' % (self.yum_cache_dir)
     yum_conf_repos = [
       '[%s]\nname = %s\nbaseurl = %s\ngpgcheck = 1\n' % (rn, rn, repos[rn])
       for rn in sorted(repos)
@@ -77,6 +82,9 @@ class Yum:
       raise Exception("Can't install anything after RPM DB was fixed")
 
     sh.run(self._yum_call() + ['groupinstall'] + mklist(groups))
+
+  def clean(self):
+    shutil.rmtree(self.yum_cache_dir, ignore_errors = True)
 
   def fix_rpmdb(self):
     current_rpmdb_dir = rpm.expandMacro('%{_dbpath}')
