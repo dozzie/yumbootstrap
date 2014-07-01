@@ -3,6 +3,7 @@
 import os
 import sys
 import optparse
+import time
 
 import yumbootstrap.yum
 from yumbootstrap.exceptions import YBError
@@ -51,6 +52,15 @@ def add_kv_list(option, opt, value, parser, attr):
 
 #-----------------------------------------------------------
 
+# to be filled after o.parse_args()
+verbose = False
+
+def op(message, *args):
+  if verbose:
+    print time.strftime('[%T] ') + (message % args)
+
+#-----------------------------------------------------------
+
 o.add_option(
   '--list-suites',
   action = 'store_const', dest = 'action', const = 'list_suites',
@@ -64,13 +74,13 @@ o.add_option(
 o.add_option(
   '--fix-rpmdb',
   action = 'store_const', dest = 'action', const = 'fix_rpmdb',
-  help = "fix chroot's RPM database instead of installing packages"
+  help = "fix target's RPM database instead of installing packages"
          " (see --skip-fix-rpmdb)",
 )
 o.add_option(
   '--cleanup',
   action = 'store_const', dest = 'action', const = 'cleanup',
-  help = "remove yumbootstrap config from chroot instead of installing"
+  help = "remove yumbootstrap config from target instead of installing"
          " packages (see --skip-cleanup)",
 )
 
@@ -114,6 +124,13 @@ o.add_option(
   help = 'install these package groups (comma separated list; may be specified'
          ' multiple times)',
 )
+#o.add_option(
+#  '--no-default-rpms', # TODO
+#  action = 'store_false', dest = 'install_default_rpms', default = True,
+#  help = "don't install default RPMs set (useful for splitting installation"
+#         " into several parts; see also --skip-fix-rpmdb and --skip-cleanup"
+#         " options)",
+#)
 o.add_option(
   '--gpgkey',
   action = 'append', dest = 'gpg_keys', default = [],
@@ -131,13 +148,13 @@ o.add_option(
 o.add_option(
   '--skip-fix-rpmdb',
   action = 'store_false', dest = 'fix_rpmdb', default = True,
-  help = "don't fix chroot's RPM database (`yum --installroot=...'"
+  help = "don't fix target's RPM database (`yum --installroot=...'"
          " won't break the chroot)",
 )
 o.add_option(
   '--skip-cleanup',
   action = 'store_false', dest = 'cleanup', default = True,
-  help = "don't remove yumbootstrap config or cache from chroot",
+  help = "don't remove yumbootstrap config or cache from target",
 )
 #o.add_option(
 #  '--download-only', # TODO
@@ -171,11 +188,14 @@ opts, args = o.parse_args()
 if len(args) != expected_nargs[opts.action]:
   o.error("wrong number of arguments")
 
+verbose = opts.verbose
+
 #-----------------------------------------------------------------------------
 
 #-----------------------------------------------------------
 
 def do_install(opts, suite, target):
+
   import yumbootstrap.suites
   from yumbootstrap.fs import touch
 
@@ -189,14 +209,19 @@ def do_install(opts, suite, target):
   else:
     raise YBError('unrecognized suite: %s', suite)
 
+  op("installing %s (release %s) to %s", suite.name(), suite.version(), target)
+
+  op("preparing empty /etc/fstab and /etc/mtab")
   os.umask(022)
   # prepare target directory with an empty /etc/fstab
   touch(target, 'etc/fstab', text = '# empty fstab')
   touch(target, 'etc/mtab')
 
   if len(opts.repositories) > 0:
+    op("using custom repositories: %s", ", ".join(sorted(opts.repositories)))
     repositories = opts.repositories
   else:
+    op("using built-in repositories")
     repositories = suite.repositories()
 
   yum = yumbootstrap.yum.Yum(
@@ -208,25 +233,38 @@ def do_install(opts, suite, target):
   # installing works also without adding key, but --nogpgcheck is passed to
   # Yum, so it's generally discouraged
   if len(opts.gpg_keys) > 0:
+    op("adding GPG keys (installation will verify RPM signatures)")
     yum.add_key(opts.gpg_keys)
+  else:
+    # TODO: detect if the target already has GPG keys imported
+    op("no GPG keys specified, installation will not verify RPM signatures")
 
   # TODO: support for --exclude
 
   # main set of packages (should already include yum and /usr/bin/db_load, so
   # `yum.fix_rpmdb()' works)
+  op("installing default packages for %s", suite.name())
   yum.install(suite.packages())
 
   # requested additional packages
   if len(opts.packages) > 0:
+    op("installing additional packages requested from command line")
     yum.install(opts.packages)
   if len(opts.groups) > 0:
+    op("installing additional package groups requested from command line")
     yum.group_install(opts.groups)
 
   if opts.fix_rpmdb:
     do_fix_rpmdb(opts, target, yum)
+  else:
+    op("skipping fixing RPM database")
 
   if opts.cleanup:
     do_cleanup(opts, target, yum)
+  else:
+    op("skipping cleanup")
+
+  op("operation finished")
 
 #-----------------------------------------------------------
 
@@ -253,6 +291,8 @@ def do_yum_conf(opts):
 #-----------------------------------------------------------
 
 def do_fix_rpmdb(opts, target, yum = None):
+  op("fixing RPM database in target directory")
+
   if yum is None:
     yum = yumbootstrap.yum.Yum(
       chroot = target,
@@ -269,6 +309,8 @@ def do_cleanup(opts, target, yum = None):
       chroot = target,
       interactive = opts.interactive,
     )
+
+  op("cleaning up after installation")
 
   # TODO: remove $target/etc/yumbootstrap.chroot/yum.conf file (now it's
   # removed in yumbootstrap.yum.Yum destructor)
