@@ -5,7 +5,7 @@ import sys
 import optparse
 
 import yumbootstrap.yum
-from yumbootstrap.fs import touch
+from yumbootstrap.exceptions import YBError
 
 #-----------------------------------------------------------------------------
 
@@ -86,11 +86,11 @@ o.add_option(
   action = 'store_false', dest = 'interactive', default = True,
   help = 'run in non-interactive mode (e.g. no progress bars)',
 )
-o.add_option(
-  '--arch',
-  action = 'store', default = os.uname()[4],
-  help = 'specify target architecture',
-)
+#o.add_option(
+#  '--arch', # TODO
+#  action = 'store', default = os.uname()[4],
+#  help = 'specify target architecture',
+#)
 o.add_option(
   '--include',
   action = 'callback', type = 'string',
@@ -139,30 +139,29 @@ o.add_option(
   action = 'store_false', dest = 'cleanup', default = True,
   help = "don't remove yumbootstrap config or cache from chroot",
 )
-# TODO
 #o.add_option(
-#  '--download-only',
+#  '--download-only', # TODO
 #  action = 'store_const', dest = 'action', const = 'download',
 #  help = "download RPMs only, don't install them",
 #)
 #o.add_option(
-#  '--foreign',
+#  '--foreign', # TODO
 #  action = 'store_true', dest = 'no_scripts', default = False,
 #  help = "don't run post-install scripts from RPM (mainly useful for"
 #         " non-matching architecture in --arch option)",
 #)
 #o.add_option(
-#  '--second-stage',
+#  '--second-stage', # TODO
 #  action = 'store_const', dest = 'action', const = 'second_stage',
 #  help = "finalize the installation started with --foreign option",
 #)
 #o.add_option(
-#  '--make-tarball',
+#  '--make-tarball', # TODO
 #  action = 'store_const', dest = 'action', const = 'tarball',
 #  help = "make a tarball with RPMs instead of installing them",
 #)
 #o.add_option(
-#  '--unpack-tarball',
+#  '--unpack-tarball', # TODO
 #  action = 'store', dest = 'tarball', default = None,
 #  help = "use RPMs from a tarball created with --make-tarball option",
 #)
@@ -172,42 +171,132 @@ opts, args = o.parse_args()
 if len(args) != expected_nargs[opts.action]:
   o.error("wrong number of arguments")
 
-sys.exit()
+#-----------------------------------------------------------------------------
+
+#-----------------------------------------------------------
+
+def do_install(opts, suite, target):
+  import yumbootstrap.suites
+  from yumbootstrap.fs import touch
+
+  (suite, version) = suite.split('-', 1)
+  if suite == 'centos':
+    suite = yumbootstrap.suites.CentOS(version)
+  elif suite == 'redhat':
+    suite = yumbootstrap.suites.RedHat(version)
+  elif suite == 'fedora':
+    suite = yumbootstrap.suites.Fedora(version)
+  else:
+    raise YBError('unrecognized suite: %s', suite)
+
+  os.umask(022)
+  # prepare target directory with an empty /etc/fstab
+  touch(target, 'etc/fstab', text = '# empty fstab')
+  touch(target, 'etc/mtab')
+
+  if len(opts.repositories) > 0:
+    repositories = opts.repositories
+  else:
+    repositories = suite.repositories()
+
+  yum = yumbootstrap.yum.Yum(
+    chroot = target,
+    repos = repositories,
+    interactive = opts.interactive,
+  )
+
+  # installing works also without adding key, but --nogpgcheck is passed to
+  # Yum, so it's generally discouraged
+  if len(opts.gpg_keys) > 0:
+    yum.add_key(opts.gpg_keys)
+
+  # TODO: support for --exclude
+
+  # main set of packages (should already include yum and /usr/bin/db_load, so
+  # `yum.fix_rpmdb()' works)
+  yum.install(suite.packages())
+
+  # requested additional packages
+  if len(opts.packages) > 0:
+    yum.install(opts.packages)
+  if len(opts.groups) > 0:
+    yum.group_install(opts.groups)
+
+  if opts.fix_rpmdb:
+    do_fix_rpmdb(opts, target, yum)
+
+  if opts.cleanup:
+    do_cleanup(opts, target, yum)
+
+#-----------------------------------------------------------
+
+def do_list_suites(opts):
+  suites = {
+    #'redhat': ['5', '6'],
+    'centos': [
+      '5', '5.1', '5.2', '5.3', '5.4', '5.5', '5.6', '5.7', '5.8', '5.9', '5.10',
+      '6', '6.1', '6.2', '6.3', '6.4', '6.5',
+    ],
+    'fedora': [
+      '18', '19', '20',
+    ],
+  }
+  for dist in sorted(suites):
+    for rel in suites[dist]:
+      print "%s-%s" % (dist, rel)
+
+#-----------------------------------------------------------
+
+def do_yum_conf(opts):
+  pass # TODO
+
+#-----------------------------------------------------------
+
+def do_fix_rpmdb(opts, target, yum = None):
+  if yum is None:
+    yum = yumbootstrap.yum.Yum(
+      chroot = target,
+      interactive = opts.interactive,
+    )
+
+  yum.fix_rpmdb()
+
+#-----------------------------------------------------------
+
+def do_cleanup(opts, target, yum = None):
+  if yum is None:
+    yum = yumbootstrap.yum.Yum(
+      chroot = target,
+      interactive = opts.interactive,
+    )
+
+  # TODO: remove $target/etc/yumbootstrap.chroot/yum.conf file (now it's
+  # removed in yumbootstrap.yum.Yum destructor)
+  yum.clean()
+
+#-----------------------------------------------------------
 
 #-----------------------------------------------------------------------------
 
-touch(root, 'etc/fstab', text = '# empty fstab')
-touch(root, 'etc/mtab')
-
-# TODO: extract yum.conf out of yumbootstrap.yum.Yum class (could be
-# YumConfig)
-yum = yumbootstrap.yum.Yum(
-  chroot = root,
-  repos = {
-    'centos':         'http://mirror.centos.org/centos/6/os/x86_64/',
-    'centos-updates': 'http://mirror.centos.org/centos/6/updates/x86_64/',
-  },
-  interactive = True,
-)
-
-# installing works also without adding key, but --nogpgcheck is passed to Yum,
-# so it's generally discouraged
-yum.add_key('gpg/RPM-GPG-KEY-CentOS-6')
-yum.install('redhat-release') # to show how it works
-
-yum.install(['yum', '/usr/bin/db_load']) # needed for yum.fix_rpmdb()
-yum.fix_rpmdb()
-yum.clean()
-
-# packages:
-#   core:
-#     * install       coreutils bash grep gawk basesystem rpm yum
-#     * groupinstall  Core
-#   OS:
-#     * install       less make mktemp vim-minimal
-#     * groupinstall  Base
-#   release:
-#     * install       redhat-release | centos-release | fedora-release
+try:
+  if opts.action == 'install':
+    do_install(opts, *args)
+  elif opts.action == 'list_suites':
+    do_list_suites(opts, *args)
+  elif opts.action == 'yum.conf':
+    do_yum_conf(opts, *args)
+  elif opts.action == 'fix_rpmdb':
+    do_fix_rpmdb(opts, *args)
+  elif opts.action == 'cleanup':
+    do_cleanup(opts, *args)
+  else:
+    # should never happen
+    o.error("unrecognized action: %s" % (opts.action,))
+except KeyboardInterrupt:
+  pass
+except YBError, e:
+  print >>sys.stderr, e
+  sys.exit(e.code)
 
 #-----------------------------------------------------------------------------
 # vim:ft=python
