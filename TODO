@@ -1,0 +1,10 @@
+  * extract YumConfig class for configs
+  * add an external source for information what to install and from where
+  * die on exit(1) from children
+  * make running processes more robust (shell metas)
+  * --exclude support
+  * multilib support
+  * config: $chroot/var/log/yum.log -> $chroot/var/log/yumbootstrap.log
+  * config: $chroot/var/lib/yum/history/history-*?
+  * config: $chroot/var/lib/yum/transaction-done-*?
+  * --verbose: use `logging' module
