@@ -101,13 +101,19 @@ o.add_option(
 #  action = 'store', default = os.uname()[4],
 #  help = 'specify target architecture',
 #)
+#o.add_option(
+#  '--proxy', # TODO
+#  action = 'store', type = 'string', default = None,
+#  help = 'specify a proxy to use when fetching files',
+#  metavar = 'HOST:PORT',
+#)
 o.add_option(
   '--include',
   action = 'callback', type = 'string',
   callback = add_pkg_list, callback_args = ('include',),
   help = 'include these packages (comma separated list; may be specified'
          ' multiple times)',
-  metavar = 'RPMS'
+  metavar = 'RPMS',
 )
 o.add_option(
   '--exclude',
@@ -115,7 +121,7 @@ o.add_option(
   callback = add_pkg_list, callback_args = ('exclude',),
   help = 'exclude these packages (comma separated list; may be specified'
          ' multiple times)',
-  metavar = 'RPMS'
+  metavar = 'RPMS',
 )
 o.add_option(
   '--groups',
@@ -136,14 +142,14 @@ o.add_option(
   action = 'append', dest = 'gpg_keys', default = [],
   help = 'add GPG key as a trusted RPM signing key (may be specified'
          ' multiple times)',
-  metavar = 'KEYFILE'
+  metavar = 'KEYFILE',
 )
 o.add_option(
   '--repo',
   action = 'callback', type = 'string',
   callback = add_kv_list, callback_args = ('repositories',),
   help = 'use this Yum repository (may be specified multiple times)',
-  metavar = 'NAME=URL'
+  metavar = 'NAME=URL',
 )
 o.add_option(
   '--skip-fix-rpmdb',
@@ -247,9 +253,9 @@ def do_install(opts, suite, target):
   yum.install(suite.packages())
 
   # requested additional packages
-  if len(opts.packages) > 0:
+  if len(opts.include) > 0:
     op("installing additional packages requested from command line")
-    yum.install(opts.packages)
+    yum.install(opts.include)
   if len(opts.groups) > 0:
     op("installing additional package groups requested from command line")
     yum.group_install(opts.groups)

@@ -64,8 +64,8 @@ class CentOS(Suite):
     version = self._version
     base_url = self._base_url
     return {
-      'centos':         '%s/%s/os/$basearch/'      % (version, base_url),
-      'centos-updates': '%s/%s/updates/$basearch/' % (version, base_url),
+      'centos':         '%s/%s/os/$basearch/'      % (base_url, version),
+      'centos-updates': '%s/%s/updates/$basearch/' % (base_url, version),
     }
 
   # redhat-release provided by centos-release
@@ -79,15 +79,13 @@ class Fedora(Suite):
     self._version = version
 
     if int(version) >= 18:
-      self._repositories = {
-        # TODO: better name
-        'fedora': 'http://download.fedoraproject.org/pub/fedora/linux/releases/%s/Everything/$basearch/os/' % (version,),
-      }
+      base_url = 'http://download.fedoraproject.org/pub/fedora/linux/releases'
     else:
-      self._repositories = {
-        # TODO: better name
-        'fedora': 'http://archives.fedoraproject.org/pub/archive/fedora/linux/releases/%s/Everything/$basearch/os/' % (version,),
-      }
+      base_url = 'http://archives.fedoraproject.org/pub/archive/fedora/linux/releases'
+    self._repositories = {
+      # TODO: better name
+      'fedora': '%s/%s/Everything/$basearch/os/' % (base_url, version),
+    }
 
   def name(self):
     return 'fedora'
