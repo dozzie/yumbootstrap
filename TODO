@@ -1,5 +1,4 @@
   * add an external source for information what to install and from where
-  * die on exit(1) from children
   * make running processes more robust (shell metas)
   * multilib support
   * --verbose: use `logging' module
