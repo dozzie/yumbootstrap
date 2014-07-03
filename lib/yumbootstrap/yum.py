@@ -131,7 +131,7 @@ class Yum:
   def fix_rpmdb(self):
     current_rpmdb_dir = rpm.expandMacro('%{_dbpath}')
     expected_rpmdb_dir = sh.run(
-      """python -c 'import rpm; print rpm.expandMacro("%{_dbpath}")'""",
+      ['python', '-c', 'import rpm; print rpm.expandMacro("%{_dbpath}")'],
       chroot = self.chroot,
       pipe = sh.READ,
     ).strip()

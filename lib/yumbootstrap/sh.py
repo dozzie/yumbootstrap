@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import os
+import subprocess
 from exceptions import YBError
 
 READ  = object() # read from
@@ -9,28 +10,26 @@ WRITE = object() # write to
 #-----------------------------------------------------------------------------
 
 def check_error(cmd, code):
-  if code in (None, 0):
-    return
-  if code & 0xff != 0:
-    raise YBError('"%s" got signal %d', cmd, code, exit = 1)
-  if code >> 8 != 0:
-    raise YBError('"%s" exited with code %d', cmd, code >> 8, exit = 1)
+  if code < 0:
+    raise YBError('"%s" got signal %d', cmd, -code, exit = 1)
+  if code > 0:
+    raise YBError('"%s" exited with code %d', cmd, code, exit = 1)
 
 #-----------------------------------------------------------------------------
 
 # wrapper that dies with YBError on I/O error or on non-zero exit
 class OutPipe:
-  def __init__(self, cmd, pipe):
+  def __init__(self, cmd, proc):
     self._cmd = cmd
-    self._pipe = pipe
+    self._proc = proc
 
   def __del__(self):
-    if self._pipe is not None:
+    if self._proc is not None:
       self.close()
 
   def write(self, data):
     try:
-      return self._pipe.write(data)
+      return self._proc.stdin.write(data)
     except IOError:
       self.close()
       # close() probably already raised an error, but if the command did
@@ -39,7 +38,7 @@ class OutPipe:
 
   def sync(self):
     try:
-      return self._pipe.sync()
+      return self._proc.stdin.sync()
     except IOError:
       self.close()
       # close() probably already raised an error, but if the command did
@@ -47,11 +46,11 @@ class OutPipe:
       raise YBError('"%s" exited unexpectedly', self._cmd, exit = 1)
 
   def close(self):
-    pipe = self._pipe
-    self._pipe = None
+    proc = self._proc
+    self._proc = None
     try:
-      ret = pipe.close()
-      check_error(self._cmd, ret)
+      proc.communicate()
+      check_error(self._cmd, proc.returncode)
     except IOError:
       # it would be weird if I/O error happened on close(), but it could be
       # flushing buffers or something
@@ -60,27 +59,41 @@ class OutPipe:
 #-----------------------------------------------------------------------------
 
 def run(command, chroot = None, pipe = None):
-  # FIXME: make this more robust in presence of shell metacharacters
-  if isinstance(command, (tuple, list)):
-    sh_cmd = ' '.join(command)
-    msg_cmd = command[0]
-  else:
-    sh_cmd = command
-    msg_cmd = command.split(' ')[0]
+  if not isinstance(command, (tuple, list)):
+    command = command.split(' ')
 
   if chroot is not None:
-    sh_cmd = 'chroot %s %s' % (chroot, sh_cmd)
+    def chroot_fun(*args):
+      os.chdir(chroot)
+      os.chroot('.')
+  else:
+    chroot_fun = None
 
   if pipe is None:
-    ret = os.system(sh_cmd)
-    check_error(msg_cmd, ret)
+    proc = subprocess.Popen(
+      command,
+      stdin = open('/dev/null'),
+      preexec_fn = chroot_fun,
+    )
+    proc.wait()
+    check_error(command[0], proc.returncode)
   elif pipe is READ:
-    f = os.popen(sh_cmd, 'r')
-    result = f.read()
-    check_error(msg_cmd, f.close())
+    proc = subprocess.Popen(
+      command,
+      stdin = open('/dev/null'),
+      stdout = subprocess.PIPE,
+      preexec_fn = chroot_fun,
+    )
+    (result,_) = proc.communicate()
+    check_error(command[0], proc.returncode)
     return result
   elif pipe is WRITE:
-    return OutPipe(msg_cmd, os.popen(sh_cmd, 'w'))
+    proc = subprocess.Popen(
+      command,
+      stdin = subprocess.PIPE,
+      preexec_fn = chroot_fun,
+    )
+    return OutPipe(command[0], proc)
 
 #-----------------------------------------------------------------------------
 # vim:ft=python

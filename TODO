@@ -1,4 +1,3 @@
   * add an external source for information what to install and from where
-  * make running processes more robust (shell metas)
   * multilib support
   * --verbose: use `logging' module
