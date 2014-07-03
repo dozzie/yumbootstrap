@@ -15,7 +15,7 @@ o = optparse.OptionParser(
           '\n  %prog [options] --list-suites'
           '\n  %prog [options] --fix-rpmdb <target>'
           '\n  %prog [options] --cleanup <target>'
-          '\n  %prog [options] --print-config > yum.conf'
+          '\n  %prog [options] --print-config [suite] > yum.conf'
           '',
   description = 'Install Yum-based distribution in a chroot environment.',
 )
@@ -23,14 +23,14 @@ o = optparse.OptionParser(
 #-----------------------------------------------------------
 
 expected_nargs = {
-  'install':     2,
-  'list_suites': 0,
-  'yum.conf':    0,
-  'fix_rpmdb':   1,
-  'cleanup':     1,
-  #'download':     ?,
-  #'second_stage': ?,
-  #'tarball':      ?,
+  'install':     [2],
+  'list_suites': [0],
+  'yum.conf':    [0, 1], # optional suite name
+  'fix_rpmdb':   [1],
+  'cleanup':     [1],
+  #'download':     [?],
+  #'second_stage': [?],
+  #'tarball':      [?],
 }
 
 o.set_defaults(
@@ -191,7 +191,7 @@ o.add_option(
 
 opts, args = o.parse_args()
 
-if len(args) != expected_nargs[opts.action]:
+if len(args) not in expected_nargs[opts.action]:
   o.error("wrong number of arguments")
 
 verbose = opts.verbose
@@ -293,7 +293,7 @@ def do_list_suites(opts):
 
 #-----------------------------------------------------------
 
-def do_yum_conf(opts):
+def do_yum_conf(opts, suite = None):
   pass # TODO
 
 #-----------------------------------------------------------
