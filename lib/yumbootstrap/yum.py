@@ -109,17 +109,21 @@ class Yum:
 
     return opts
 
-  def install(self, packages):
+  def install(self, packages, exclude = []):
     if self.rpmdb_fixed:
       raise Exception("Can't install anything after RPM DB was fixed")
 
-    sh.run(self._yum_call() + ['install'] + mklist(packages))
+    exclude_opts = ["--exclude=" + pkg for pkg in exclude]
 
-  def group_install(self, groups):
+    sh.run(self._yum_call() + exclude_opts + ['install'] + mklist(packages))
+
+  def group_install(self, groups, exclude = []):
     if self.rpmdb_fixed:
       raise Exception("Can't install anything after RPM DB was fixed")
 
-    sh.run(self._yum_call() + ['groupinstall'] + mklist(groups))
+    exclude_opts = ["--exclude=" + pkg for pkg in exclude]
+
+    sh.run(self._yum_call() + exclude_opts + ['groupinstall'] + mklist(groups))
 
   def clean(self):
     shutil.rmtree(self.yum_conf.root_dir(), ignore_errors = True)

@@ -254,20 +254,18 @@ def do_install(opts, suite, target):
     interactive = opts.interactive,
   )
 
-  # TODO: support for --exclude
-
   # main set of packages (should already include yum and /usr/bin/db_load, so
   # `yum.fix_rpmdb()' works)
   op("installing default packages for %s", suite.name())
-  yum.install(suite.packages())
+  yum.install(suite.packages(), exclude = opts.exclude)
 
   # requested additional packages
   if len(opts.include) > 0:
     op("installing additional packages requested from command line")
-    yum.install(opts.include)
+    yum.install(opts.include, exclude = opts.exclude)
   if len(opts.groups) > 0:
     op("installing additional package groups requested from command line")
-    yum.group_install(opts.groups)
+    yum.group_install(opts.groups, exclude = opts.exclude)
 
   if opts.fix_rpmdb:
     do_fix_rpmdb(opts, target, yum)
