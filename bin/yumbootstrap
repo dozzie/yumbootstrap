@@ -230,20 +230,22 @@ def do_install(opts, suite, target):
     op("using built-in repositories")
     repositories = suite.repositories()
 
+  yum_conf = yumbootstrap.yum.YumConfig(chroot = target, repos = repositories)
+
   yum = yumbootstrap.yum.Yum(
     chroot = target,
-    repos = repositories,
+    yum_conf = yum_conf,
     interactive = opts.interactive,
   )
 
   # installing works also without adding key, but --nogpgcheck is passed to
   # Yum, so it's generally discouraged
   if len(opts.gpg_keys) > 0:
-    op("adding GPG keys (installation will verify RPM signatures)")
-    yum.add_key(opts.gpg_keys)
+    op("adding GPG keys")
+    for keyfile in opts.gpg_keys:
+      yum_conf.add_key(keyfile)
   else:
-    # TODO: detect if the target already has GPG keys imported
-    op("no GPG keys specified, installation will not verify RPM signatures")
+    pass # TODO: print warning
 
   # TODO: support for --exclude
 

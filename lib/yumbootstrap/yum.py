@@ -20,54 +20,88 @@ def mklist(value):
 
 #-----------------------------------------------------------------------------
 
+class YumConfig:
+  def __init__(self, chroot, repos = {}):
+    self.chroot = os.path.abspath(chroot)
+    self.repos = repos.copy() # shallow copy is enough
+    self.gpg_keys = os.path.join(self.chroot, 'yumbootstrap/RPM-GPG-KEYS')
+    #self.multilib = False
+
+  def add_repository(self, name, url):
+    self.repos[name] = url
+
+  def add_key(self, path):
+    fs.touch(self.gpg_keys)
+    open(self.gpg_keys, 'a').write(open(path).read())
+
+  def config_file(self):
+    return os.path.join(self.chroot, 'yumbootstrap/yum.conf')
+
+  def root_dir(self):
+    return os.path.join(self.chroot, 'yumbootstrap')
+
+  def text(self):
+    if os.path.exists(self.gpg_keys):
+      gpgcheck = 1
+      def repo(name, url):
+        return \
+          '\n' \
+          '[%s]\n' \
+          'name = %s\n' \
+          'baseurl = %s\n' \
+          'gpgkey = file://%s\n' % (name, name, url, self.gpg_keys)
+    else:
+      gpgcheck = 0
+      def repo(name, url):
+        return \
+          '\n' \
+          '[%s]\n' \
+          'name = %s\n' \
+          'baseurl = %s\n' % (name, name, url)
+
+    main = \
+      '[main]\n' \
+      'exactarch = 1\n' \
+      'obsoletes = 1\n' \
+      '#multilib_policy = all | best\n' \
+      'cachedir = /yumbootstrap/cache\n' \
+      'logfile  = /yumbootstrap/log/yum.log\n'
+    main += 'gpgcheck = %d\n' % (gpgcheck)
+
+    repos = [repo(name, self.repos[name]) for name in sorted(self.repos)]
+
+    return main + ''.join(repos)
+
+#-----------------------------------------------------------------------------
+
 # TODO:
 #   * setarch
-#   * multilib
+#   * should `chroot' go through YumConfig?
 class Yum:
-  def __init__(self, chroot, repos = {},
-               yum = '/usr/bin/yum', rpm = '/usr/bin/rpm',
+  def __init__(self, chroot, yum_conf = None, yum = '/usr/bin/yum',
                interactive = False):
     self.chroot = os.path.abspath(chroot)
-    self.yum = yum
-    self.rpm = rpm
+    if yum_conf is not None:
+      self.yum_conf = yum_conf
+    else:
+      self.yum_conf = YumConfig(chroot = chroot)
+    self.yum = yum # yum from host OS
     self.interactive = interactive
-    self.yum_config_dir = os.path.join(self.chroot, 'etc/yumbootstrap.chroot')
-    self.yum_config = os.path.join(self.yum_config_dir, 'yum.conf')
-    self.yum_cache_dir = '/var/cache/yum/yumbootstrap'
-    self.has_key = False
     self.rpmdb_fixed = False
-
-    yum_conf_main = \
-      '[main]\n' \
-      'exactarch=1\n' \
-      'obsoletes=1\n' \
-      'cachedir=%s\n' % (self.yum_cache_dir)
-    yum_conf_repos = [
-      '[%s]\nname = %s\nbaseurl = %s\ngpgcheck = 1\n' % (rn, rn, repos[rn])
-      for rn in sorted(repos)
-    ]
-    yum_conf = yum_conf_main + ''.join(yum_conf_repos)
-    fs.touch(self.yum_config, text = yum_conf_main + ''.join(yum_conf_repos))
-
-  def __del__(self):
-    shutil.rmtree(self.yum_config_dir, ignore_errors = True)
-
-  def add_key(self, key_file):
-    sh.run([self.rpm, '--root', self.chroot, '--import'] + mklist(key_file))
-    self.has_key = True
+    # NOTE: writing yum.conf is delayed to the first operation
 
   def _yum_call(self):
-    opts = [
-      self.yum, '-c', self.yum_config, '--installroot', self.chroot, '-y'
-    ]
+    yum_conf = self.yum_conf.config_file()
+
+    if not os.path.exists(yum_conf):
+      fs.touch(yum_conf, text = self.yum_conf.text())
+
+    opts = [self.yum, '-c', yum_conf, '--installroot', self.chroot, '-y']
 
     if self.interactive:
       opts.extend(['-e', '1', '-d', '2'])
     else:
       opts.extend(['-e', '1', '-d', '1'])
-
-    if not self.has_key:
-      opts.append('--nogpgcheck')
 
     return opts
 
@@ -84,7 +118,7 @@ class Yum:
     sh.run(self._yum_call() + ['groupinstall'] + mklist(groups))
 
   def clean(self):
-    shutil.rmtree(self.yum_cache_dir, ignore_errors = True)
+    shutil.rmtree(self.yum_conf.root_dir(), ignore_errors = True)
 
   def fix_rpmdb(self):
     current_rpmdb_dir = rpm.expandMacro('%{_dbpath}')

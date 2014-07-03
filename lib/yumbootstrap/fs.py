@@ -21,7 +21,7 @@ def touch(*path, **kwargs):
   elif 'text' in kwargs:
     open(new_file, 'w').write(kwargs['text'] + '\n')
   else:
-    open(new_file, 'w')
+    open(new_file, 'a')
 
 #-----------------------------------------------------------------------------
 # vim:ft=python
