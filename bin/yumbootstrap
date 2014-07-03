@@ -12,10 +12,10 @@ from yumbootstrap.exceptions import YBError
 
 o = optparse.OptionParser(
   usage = '\n  %prog [options] <suite> <target>'
+          '\n  %prog [options] --print-config <suite> <target> > yum.conf'
           '\n  %prog [options] --list-suites'
           '\n  %prog [options] --fix-rpmdb <target>'
           '\n  %prog [options] --cleanup <target>'
-          '\n  %prog [options] --print-config [suite] > yum.conf'
           '',
   description = 'Install Yum-based distribution in a chroot environment.',
 )
@@ -24,8 +24,8 @@ o = optparse.OptionParser(
 
 expected_nargs = {
   'install':     [2],
+  'yum.conf':    [2],
   'list_suites': [0],
-  'yum.conf':    [0, 1], # optional suite name
   'fix_rpmdb':   [1],
   'cleanup':     [1],
   #'download':     [?],
@@ -200,10 +200,8 @@ verbose = opts.verbose
 
 #-----------------------------------------------------------
 
-def do_install(opts, suite, target):
-
+def prepare_suite(suite):
   import yumbootstrap.suites
-  from yumbootstrap.fs import touch
 
   (suite, version) = suite.split('-', 1)
   if suite == 'centos':
@@ -214,6 +212,15 @@ def do_install(opts, suite, target):
     suite = yumbootstrap.suites.Fedora(version)
   else:
     raise YBError('unrecognized suite: %s', suite)
+
+  return suite
+
+#-----------------------------------------------------------
+
+def do_install(opts, suite, target):
+  from yumbootstrap.fs import touch
+
+  suite = prepare_suite(suite)
 
   op("installing %s (release %s) to %s", suite.name(), suite.version(), target)
 
@@ -232,12 +239,6 @@ def do_install(opts, suite, target):
 
   yum_conf = yumbootstrap.yum.YumConfig(chroot = target, repos = repositories)
 
-  yum = yumbootstrap.yum.Yum(
-    chroot = target,
-    yum_conf = yum_conf,
-    interactive = opts.interactive,
-  )
-
   # installing works also without adding key, but --nogpgcheck is passed to
   # Yum, so it's generally discouraged
   if len(opts.gpg_keys) > 0:
@@ -246,6 +247,12 @@ def do_install(opts, suite, target):
       yum_conf.add_key(keyfile)
   else:
     pass # TODO: print warning
+
+  yum = yumbootstrap.yum.Yum(
+    chroot = target,
+    yum_conf = yum_conf,
+    interactive = opts.interactive,
+  )
 
   # TODO: support for --exclude
 
@@ -293,8 +300,25 @@ def do_list_suites(opts):
 
 #-----------------------------------------------------------
 
-def do_yum_conf(opts, suite = None):
-  pass # TODO
+def do_yum_conf(opts, suite, target):
+  suite = prepare_suite(suite)
+
+  if len(opts.repositories) > 0:
+    repositories = opts.repositories
+  else:
+    repositories = suite.repositories()
+
+  yum_conf = yumbootstrap.yum.YumConfig(chroot = target, repos = repositories)
+
+  if len(opts.gpg_keys) > 0:
+    cmd = 'cat %s > %s' % (' '.join(opts.gpg_keys), yum_conf.gpg_keys)
+    sys.stdout.write('# remember to put the keys to target directory:\n')
+    sys.stdout.write('# %s\n\n' % (cmd))
+    for keyfile in opts.gpg_keys:
+      yum_conf.add_key(keyfile, pretend = True)
+
+  sys.stdout.write(yum_conf.text())
+  sys.stdout.flush()
 
 #-----------------------------------------------------------
 

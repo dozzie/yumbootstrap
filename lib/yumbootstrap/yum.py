@@ -25,14 +25,18 @@ class YumConfig:
     self.chroot = os.path.abspath(chroot)
     self.repos = repos.copy() # shallow copy is enough
     self.gpg_keys = os.path.join(self.chroot, 'yumbootstrap/RPM-GPG-KEYS')
+    self.pretend_has_keys = False
     #self.multilib = False
 
   def add_repository(self, name, url):
     self.repos[name] = url
 
-  def add_key(self, path):
-    fs.touch(self.gpg_keys)
-    open(self.gpg_keys, 'a').write(open(path).read())
+  def add_key(self, path, pretend = False):
+    if pretend:
+      self.pretend_has_keys = True
+    else:
+      fs.touch(self.gpg_keys)
+      open(self.gpg_keys, 'a').write(open(path).read())
 
   def config_file(self):
     return os.path.join(self.chroot, 'yumbootstrap/yum.conf')
@@ -41,7 +45,7 @@ class YumConfig:
     return os.path.join(self.chroot, 'yumbootstrap')
 
   def text(self):
-    if os.path.exists(self.gpg_keys):
+    if self.pretend_has_keys or os.path.exists(self.gpg_keys):
       gpgcheck = 1
       def repo(name, url):
         return \
