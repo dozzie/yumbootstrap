@@ -134,7 +134,7 @@ class Yum:
       """python -c 'import rpm; print rpm.expandMacro("%{_dbpath}")'""",
       chroot = self.chroot,
       pipe = sh.READ,
-    ).read().strip()
+    ).strip()
 
     # input directory
     rpmdb_dir = os.path.join(self.chroot, current_rpmdb_dir.lstrip('/'))

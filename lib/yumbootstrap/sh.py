@@ -20,7 +20,7 @@ def run(command, chroot = None, pipe = None):
   if pipe is None:
     os.system(sh_cmd)
   elif pipe is READ:
-    return os.popen(sh_cmd, 'r')
+    return os.popen(sh_cmd, 'r').read()
   elif pipe is WRITE:
     return os.popen(sh_cmd, 'w')
 
