@@ -1,0 +1,12 @@
+# comments and whitespaces are allowed (and ignored)
+basesystem
+python-rpm
+
+# paths are allowed
+/usr/bin/db_load
+
+# group names
+@Core
+
+# excluded RPMs
+-openssh-server
