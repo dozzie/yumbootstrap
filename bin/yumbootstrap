@@ -138,7 +138,7 @@ o.add_option(
 #         " options)",
 #)
 o.add_option(
-  '--gpgkey',
+  '--gpg-key',
   action = 'append', dest = 'gpg_keys', default = [],
   help = 'add GPG key as a trusted RPM signing key (may be specified'
          ' multiple times)',
