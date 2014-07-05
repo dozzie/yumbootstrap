@@ -2,25 +2,34 @@
 
 import re
 import os
+import errno
 from exceptions import YBError
 
 #-----------------------------------------------------------------------------
 
 def list_suites(directory):
-  result = [fn[:-6] for fn in os.listdir(directory) if fn.endswith('.suite')]
-  result.sort()
-  return result
+  try:
+    result = [fn[:-6] for fn in os.listdir(directory) if fn.endswith('.suite')]
+    result.sort()
+    return result
+  except OSError, e:
+    if e.errno == errno.ENOENT:
+      return []
+    raise YBError("Can't access %s: %s", directory, e.args[1], exit = 1)
 
 def load_suite(directory, suite_name):
   if '/' in suite_name:
-    raise YBError('unrecognized suite: %s', suite_name)
+    raise YBError('Unrecognized suite: %s', suite_name)
 
   suite_file = os.path.join(directory, suite_name + '.suite')
 
   if not os.path.isfile(suite_file):
-    raise YBError('unrecognized suite: %s', suite_name)
+    raise YBError('Unrecognized suite: %s', suite_name)
 
-  return Suite(suite_name, suite_file)
+  try:
+    return Suite(suite_name, suite_file)
+  except OSError, e:
+    raise YBError("Can't access %s: %s", directory, e.args[1], exit = 1)
 
 #-----------------------------------------------------------------------------
 
@@ -155,9 +164,9 @@ class Suite:
 
     def error(line):
       if section is None:
-        raise YBError('invalid config line %d: %s', lineno, line, exit = 1)
+        raise YBError('Invalid config line %d: %s', lineno, line, exit = 1)
       else:
-        raise YBError('invalid config line %d (section %s): %s',
+        raise YBError('Invalid config line %d (section %s): %s',
                       lineno, section, line, exit = 1)
 
     while True:
