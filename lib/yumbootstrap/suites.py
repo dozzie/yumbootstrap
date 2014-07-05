@@ -6,9 +6,30 @@ from exceptions import YBError
 
 #-----------------------------------------------------------------------------
 
+def list_suites(directory):
+  result = [fn[:-6] for fn in os.listdir(directory) if fn.endswith('.suite')]
+  result.sort()
+  return result
+
+def load_suite(directory, suite_name):
+  if '/' in suite_name:
+    raise YBError('unrecognized suite: %s', suite_name)
+
+  suite_file = os.path.join(directory, suite_name + '.suite')
+
+  if not os.path.isfile(suite_file):
+    raise YBError('unrecognized suite: %s', suite_name)
+
+  return Suite(suite_name, suite_file)
+
+#-----------------------------------------------------------------------------
+
 class Section:
   def __init__(self, values):
     self._values = values
+
+  def __iter__(self):
+    return self._values.__iter__()
 
   def __contains__(self, name):
     return name in self._values
@@ -82,8 +103,8 @@ class Suite:
     return self['name']
 
   @property
-  def version(self):
-    return self['version']
+  def release(self):
+    return self['release']
 
   @property
   def packages(self):
@@ -95,14 +116,18 @@ class Suite:
 
   @property
   def repositories(self):
-    return self._sections['repositories']
+    repos = self._sections['repositories']
+    return dict([(name, repos[name]) for name in repos])
 
   @property
   def post_install(self):
+    # TODO: this should be a sequence of scripts in the same order as in suite
+    # file
     return self._sections['post_install']
 
   @property
   def environment(self):
+    # TODO: this should be a hash with proper values
     return self._sections['environment']
 
   #---------------------------------------------------------

@@ -10,6 +10,10 @@ from yumbootstrap.exceptions import YBError
 
 #-----------------------------------------------------------------------------
 
+SUITE_DIR = '/etc/yumbootstrap/suites'
+
+#-----------------------------------------------------------------------------
+
 o = optparse.OptionParser(
   usage = '\n  %prog [options] <suite> <target>'
           '\n  %prog [options] --print-config <suite> <target> > yum.conf'
@@ -108,6 +112,12 @@ o.add_option(
 #  metavar = 'HOST:PORT',
 #)
 o.add_option(
+  '--suite-dir',
+  action = 'store', dest = 'suite_dir', type = 'string', default = SUITE_DIR,
+  help = 'specify a directory with suite definitions',
+  metavar = 'PATH',
+)
+o.add_option(
   '--include',
   action = 'callback', type = 'string',
   callback = add_pkg_list, callback_args = ('include',),
@@ -200,29 +210,13 @@ verbose = opts.verbose
 
 #-----------------------------------------------------------
 
-def prepare_suite(suite):
-  import yumbootstrap.suites
-
-  (suite, version) = suite.split('-', 1)
-  if suite == 'centos':
-    suite = yumbootstrap.suites.CentOS(version)
-  elif suite == 'redhat':
-    suite = yumbootstrap.suites.RedHat(version)
-  elif suite == 'fedora':
-    suite = yumbootstrap.suites.Fedora(version)
-  else:
-    raise YBError('unrecognized suite: %s', suite)
-
-  return suite
-
-#-----------------------------------------------------------
-
 def do_install(opts, suite, target):
   from yumbootstrap.fs import touch
+  import yumbootstrap.suites
 
-  suite = prepare_suite(suite)
+  suite = yumbootstrap.suites.load_suite(opts.suite_dir, suite)
 
-  op("installing %s (release %s) to %s", suite.name(), suite.version(), target)
+  op("installing %s (release %s) to %s", suite.name, suite.release, target)
 
   op("preparing empty /etc/fstab and /etc/mtab")
   os.umask(022)
@@ -235,15 +229,17 @@ def do_install(opts, suite, target):
     repositories = opts.repositories
   else:
     op("using built-in repositories")
-    repositories = suite.repositories()
+    repositories = suite.repositories
 
   yum_conf = yumbootstrap.yum.YumConfig(chroot = target, repos = repositories)
 
   # installing works also without adding key, but --nogpgcheck is passed to
   # Yum, so it's generally discouraged
-  if len(opts.gpg_keys) > 0:
+  if len(opts.gpg_keys) > 0 or len(suite.gpg_keys) > 0:
     op("adding GPG keys")
     for keyfile in opts.gpg_keys:
+      yum_conf.add_key(keyfile)
+    for keyfile in suite.gpg_keys:
       yum_conf.add_key(keyfile)
   else:
     pass # TODO: print warning
@@ -254,24 +250,29 @@ def do_install(opts, suite, target):
     interactive = opts.interactive,
   )
 
+  exclude = suite.packages.exclude + opts.exclude
+
   # main set of packages (should already include yum and /usr/bin/db_load, so
   # `yum.fix_rpmdb()' works)
-  op("installing default packages for %s", suite.name())
-  yum.install(suite.packages(), exclude = opts.exclude)
+  op("installing default packages for %s %s", suite.name, suite.release)
+  install = suite.packages.install + ['@' + g for g in suite.packages.groups]
+  yum.install(install, exclude = exclude)
 
   # requested additional packages
   if len(opts.include) > 0:
     op("installing additional packages requested from command line")
-    yum.install(opts.include, exclude = opts.exclude)
+    yum.install(opts.include, exclude = exclude)
   if len(opts.groups) > 0:
     op("installing additional package groups requested from command line")
-    yum.group_install(opts.groups, exclude = opts.exclude)
+    yum.group_install(opts.groups, exclude = exclude)
 
+  # TODO: move this to a post_install script
   if opts.fix_rpmdb:
     do_fix_rpmdb(opts, target, yum)
   else:
     op("skipping fixing RPM database")
 
+  # TODO: move this to a post_install script
   if opts.cleanup:
     do_cleanup(opts, target, yum)
   else:
@@ -282,19 +283,9 @@ def do_install(opts, suite, target):
 #-----------------------------------------------------------
 
 def do_list_suites(opts):
-  suites = {
-    #'redhat': ['5', '6'],
-    'centos': [
-      '5', '5.1', '5.2', '5.3', '5.4', '5.5', '5.6', '5.7', '5.8', '5.9', '5.10',
-      '6', '6.1', '6.2', '6.3', '6.4', '6.5',
-    ],
-    'fedora': [
-      '18', '19', '20',
-    ],
-  }
-  for dist in sorted(suites):
-    for rel in suites[dist]:
-      print "%s-%s" % (dist, rel)
+  import yumbootstrap.suites
+  for suite in yumbootstrap.suites.list_suites(opts.suite_dir):
+    print suite
 
 #-----------------------------------------------------------
 
