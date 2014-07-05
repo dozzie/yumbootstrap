@@ -5,11 +5,13 @@ name = CentOS
 release = 5
 
 # some values can be specified multiple times
+# NOTE: non-absolute paths here are relative to suite file location
 # "?=" is a conditional: the line is in effect if the file exists
 gpg_key = /usr/share/yumbootstrap/gpg-keys/${suite}.asc
 gpg_key ?= /etc/yumbootstrap/gpg-keys/${suite}.asc
 
 # see ./packages.list for some examples
+# NOTE: non-absolute paths here are relative to suite file location
 packages = /usr/share/yumbootstrap/packages/${suite}.list
 packages = /etc/yumbootstrap/packages/cfengine.list
 packages ?= /etc/yumbootstrap/packages/local-${suite}.list

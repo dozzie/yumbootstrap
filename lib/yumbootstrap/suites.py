@@ -96,7 +96,7 @@ class Suite:
   def __init__(self, suite, filename):
     self._suite = suite
     self._sections = {}
-    self._read(open(filename))
+    self._read(filename)
     if 'environment' not in self._sections:
       self._sections['environment'] = Section({})
     if 'repositories' not in self._sections:
@@ -157,7 +157,9 @@ class Suite:
 
   #---------------------------------------------------------
 
-  def _read(self, f):
+  def _read(self, filename):
+    f = open(filename)
+    directory = os.path.abspath(os.path.dirname(filename))
     lineno = 0
     section = None
     values = {}
@@ -210,9 +212,30 @@ class Suite:
         # variable has to be non-conditional in repositories
         error(line)
 
+      if section != 'environment' and groups['env_keep'] is not None:
+        # env_keep line is only allowed in environment section
+        error(line)
+
       # substitute ${suite} in groups['value']
       if section not in ('repositories', 'environment'):
         groups['value'] = groups['value'].replace('${suite}', self._suite)
+
+      if section is None and groups['variable'] is not None and \
+         groups['name'] in ('gpg_key', 'packages'):
+        # replace relative path in option with absolute path (paths are
+        # relative to the suite file location)
+        if not groups['value'].startswith('/'):
+          groups['value'] = os.path.join(directory, groups['value'])
+          groups['value'] = os.path.normpath(groups['value'])
+
+      if section == 'post_install' and not groups['value'].startswith('/'):
+        # make the script relative to suite file location, but only if it's
+        # in a form of a path already (don't change $PATH searches)
+        script = groups['value'].split(' ')
+        if '/' in script[0]:
+          script[0] = os.path.join(directory, script[0])
+          script[0] = os.path.normpath(script[0])
+          groups['value'] = ' '.join(script)
 
       if groups['set'] == '?=' and \
          not os.path.exists(groups['value'].split(' ')[0]):
