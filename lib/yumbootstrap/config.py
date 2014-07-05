@@ -23,7 +23,28 @@ class Section:
 #-----------------------------------------------------------------------------
 
 class Packages:
-  pass # TODO
+  def __init__(self):
+    self.install = []
+    self.groups = []
+    self.exclude = []
+
+  def add_file(self, filename):
+    f = open(filename)
+    while True:
+      line = f.readline()
+      if line == '':
+        return
+
+      line = line.strip()
+      if line == '' or line.startswith("#"):
+        continue
+
+      if line.startswith('-'):
+        self.exclude.append(line[1:])
+      elif line.startswith('@'):
+        self.groups.append(line[1:])
+      else:
+        self.install.append(line)
 
 #-----------------------------------------------------------------------------
 
@@ -53,7 +74,9 @@ class Config:
       self._sections['environment'] = Section({})
     if 'repositories' not in self._sections:
       self._sections['repositories'] = Section({})
-    # TODO: self['packages'] -> self.packages
+    self.packages = Packages()
+    for f in self.get_all('packages'):
+      self.packages.add_file(f)
 
   def _read(self, f):
     lineno = 0
