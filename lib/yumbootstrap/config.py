@@ -74,9 +74,57 @@ class Config:
       self._sections['environment'] = Section({})
     if 'repositories' not in self._sections:
       self._sections['repositories'] = Section({})
-    self.packages = Packages()
+    self._packages = Packages()
     for f in self.get_all('packages'):
-      self.packages.add_file(f)
+      self._packages.add_file(f)
+
+  #---------------------------------------------------------
+
+  @property
+  def name(self):
+    return self['name']
+
+  @property
+  def version(self):
+    return self['version']
+
+  @property
+  def packages(self):
+    return self._packages
+
+  @property
+  def gpg_keys(self):
+    return self.get_all('gpg_key')
+
+  @property
+  def repositories(self):
+    return self._sections['repositories']
+
+  @property
+  def post_install(self):
+    return self._sections['post_install']
+
+  @property
+  def environment(self):
+    return self._sections['environment']
+
+  #---------------------------------------------------------
+
+  def __contains__(self, name):
+    return name in self._sections[None]
+
+  def __getitem__(self, name):
+    if name in self._sections[None]:
+      return self._sections[None][name]
+
+  def get_all(self, name):
+    return self._sections[None].get_all(name)
+
+  def section(self, name):
+    if section in self._sections:
+      return self._sections[name]
+
+  #---------------------------------------------------------
 
   def _read(self, f):
     lineno = 0
@@ -145,32 +193,6 @@ class Config:
       if groups['name'] not in values:
         values[ groups['name'] ] = []
       values[ groups['name'] ].append(groups['value'])
-
-  def __contains__(self, name):
-    return name in self._sections[None]
-
-  def __getitem__(self, name):
-    if name in self._sections[None]:
-      return self._sections[None][name]
-
-  def get_all(self, name):
-    return self._sections[None].get_all(name)
-
-  def section(self, name):
-    if section in self._sections:
-      return self._sections[name]
-
-  @property
-  def post_install(self):
-    return self._sections['post_install']
-
-  @property
-  def environment(self):
-    return self._sections['environment']
-
-  @property
-  def repositories(self):
-    return self._sections['repositories']
 
 #-----------------------------------------------------------------------------
 # vim:ft=python
