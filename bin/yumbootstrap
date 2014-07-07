@@ -18,8 +18,6 @@ o = optparse.OptionParser(
   usage = '\n  %prog [options] <suite> <target>'
           '\n  %prog [options] --print-config <suite> <target> > yum.conf'
           '\n  %prog [options] --list-suites'
-          '\n  %prog [options] --fix-rpmdb <target>'
-          '\n  %prog [options] --cleanup <target>'
           '',
   description = 'Install Yum-based distribution in a chroot environment.',
 )
@@ -30,8 +28,6 @@ expected_nargs = {
   'install':     [2],
   'yum.conf':    [2],
   'list_suites': [0],
-  'fix_rpmdb':   [1],
-  'cleanup':     [1],
   #'download':     [?],
   #'second_stage': [?],
   #'tarball':      [?],
@@ -74,18 +70,6 @@ o.add_option(
   '--print-config',
   action = 'store_const', dest = 'action', const = 'yum.conf',
   help = 'print Yum configuration which will be used by yumbootstrap',
-)
-o.add_option(
-  '--fix-rpmdb',
-  action = 'store_const', dest = 'action', const = 'fix_rpmdb',
-  help = "fix target's RPM database instead of installing packages"
-         " (see --skip-fix-rpmdb)",
-)
-o.add_option(
-  '--cleanup',
-  action = 'store_const', dest = 'action', const = 'cleanup',
-  help = "remove yumbootstrap config from target instead of installing"
-         " packages (see --skip-cleanup)",
 )
 
 #-----------------------------------------------------------
@@ -160,17 +144,6 @@ o.add_option(
   callback = add_kv_list, callback_args = ('repositories',),
   help = 'use this Yum repository (may be specified multiple times)',
   metavar = 'NAME=URL',
-)
-o.add_option(
-  '--skip-fix-rpmdb',
-  action = 'store_false', dest = 'fix_rpmdb', default = True,
-  help = "don't fix target's RPM database (`yum --installroot=...'"
-         " won't break the chroot)",
-)
-o.add_option(
-  '--skip-cleanup',
-  action = 'store_false', dest = 'cleanup', default = True,
-  help = "don't remove yumbootstrap config or cache from target",
 )
 #o.add_option(
 #  '--download-only', # TODO
@@ -276,7 +249,7 @@ def do_install(opts, suite, target):
     yum.group_install(opts.groups, exclude = exclude)
 
   if len(suite.post_install):
-    op("running post-install scripts")
+    op("executing post-install scripts")
     from yumbootstrap import sh
     # TODO: --skip-scripts, --just-scripts
     for (script_name, script) in suite.post_install:
@@ -284,18 +257,6 @@ def do_install(opts, suite, target):
       os.environ['SCRIPT_NAME'] = script_name
       os.environ['SCRIPT_PATH'] = script[0]
       sh.run(script, env = suite.environment)
-
-  # TODO: move this to a post_install script
-  if opts.fix_rpmdb:
-    do_fix_rpmdb(opts, target, yum)
-  else:
-    op("skipping fixing RPM database")
-
-  # TODO: move this to a post_install script
-  if opts.cleanup:
-    do_cleanup(opts, target, yum)
-  else:
-    op("skipping cleanup")
 
   op("operation finished")
 
@@ -330,34 +291,6 @@ def do_yum_conf(opts, suite, target):
 
 #-----------------------------------------------------------
 
-def do_fix_rpmdb(opts, target, yum = None):
-  op("fixing RPM database in target directory")
-
-  if yum is None:
-    yum = yumbootstrap.yum.Yum(
-      chroot = target,
-      interactive = opts.interactive,
-    )
-
-  yum.fix_rpmdb()
-
-#-----------------------------------------------------------
-
-def do_cleanup(opts, target, yum = None):
-  if yum is None:
-    yum = yumbootstrap.yum.Yum(
-      chroot = target,
-      interactive = opts.interactive,
-    )
-
-  op("cleaning up after installation")
-
-  # TODO: remove $target/etc/yumbootstrap.chroot/yum.conf file (now it's
-  # removed in yumbootstrap.yum.Yum destructor)
-  yum.clean()
-
-#-----------------------------------------------------------
-
 #-----------------------------------------------------------------------------
 
 try:
@@ -367,10 +300,6 @@ try:
     do_list_suites(opts, *args)
   elif opts.action == 'yum.conf':
     do_yum_conf(opts, *args)
-  elif opts.action == 'fix_rpmdb':
-    do_fix_rpmdb(opts, *args)
-  elif opts.action == 'cleanup':
-    do_cleanup(opts, *args)
   else:
     # should never happen
     o.error("unrecognized action: %s" % (opts.action,))
