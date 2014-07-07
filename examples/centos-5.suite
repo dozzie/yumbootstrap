@@ -23,6 +23,7 @@ packages ?= /etc/yumbootstrap/packages/local-${suite}.list
 # scripts have environment variables reset, except for what's in [environment]
 # section and several additional variables:
 #   $TARGET -- target directory
+#   $VERBOSE -- "true" or "false", depending on presence of --verbose option
 #   $SUITE, $SUITE_CONF -- suite name (${suite}) and suite config (this file)
 #   $YUMBOOTSTRAP_DIR -- "yumbootstrap", relative to $TARGET
 #   $YUM_CONF -- "yumbootstrap/yum.conf"; full path: $TARGET/$YUM_CONF

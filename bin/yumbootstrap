@@ -215,6 +215,10 @@ def do_install(opts, suite, target):
   import yumbootstrap.suites
 
   os.environ["TARGET"] = os.path.abspath(target)
+  if verbose:
+    os.environ["VERBOSE"] = "true"
+  else:
+    os.environ["VERBOSE"] = "false"
   suite = yumbootstrap.suites.load_suite(opts.suite_dir, suite)
 
   op("installing %s (release %s) to %s", suite.name, suite.release, target)

@@ -300,7 +300,7 @@ class Suite:
       self._environment.keep(e)
 
     # set by yumbootstrap
-    for e in ["TARGET", "SCRIPT_NAME", "SCRIPT_PATH"]:
+    for e in ["TARGET", "SCRIPT_NAME", "SCRIPT_PATH", "VERBOSE"]:
       self._environment.keep(e)
 
   #---------------------------------------------------------
