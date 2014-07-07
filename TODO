@@ -1,9 +1,5 @@
-  * add an external source for information what to install and from where
-    * move --fix-rpmdb and --cleanup to scripts
   * multilib support
   * --verbose: use `logging' module
-  * reset environment (os.environ)
-  * --suite-dir=PATH
   * --no-scripts, --just-scripts NAME1 NAME2 ..., --list-scripts
   * --skip-script=NAME
   * [pre_install], --skip-script=pre:name|post:name|name
