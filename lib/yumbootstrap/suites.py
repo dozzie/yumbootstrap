@@ -175,15 +175,39 @@ class EnvironmentSection(Section):
     ')$'
   )
 
-  def __init__(self):
-    self._set = {}
-    self._keep = []
+  @staticmethod
+  def _re(pattern):
+    return re.compile('^' + pattern.replace('*', '.*') + '$')
+
+  def __init__(self, env = None, keep = None):
+    if env is None:
+      self._set = {}
+    else:
+      self._set = env.copy()
+
+    if keep is None:
+      self._keep_values = set()
+      self._keep_wildcards = []
+    else:
+      self._keep_values = set([k for k in keep if '*' not in k])
+      self._keep_wildcards = [
+        EnvironmentSection._re(k) for k in keep if '*' in k
+      ]
+
+  def set(self, name, value):
+    self._set[name] = value
+
+  def keep(self, name):
+    if '*' in name:
+      self._keep_wildcards.append(EnvironmentSection._re(name))
+    else:
+      self._keep_values.add(name)
 
   def add(self, variable, name, value, keep, keep_name):
     if keep_name is not None:
-      self._keep.append(keep_name)
+      self.keep(keep_name)
     elif name not in self._set:
-      self._set[name] = value
+      self.set(name, value)
     # else silently discard (keep only the first occurrence)
 
   def __iter__(self):
@@ -195,8 +219,19 @@ class EnvironmentSection(Section):
   def __getitem__(self, name):
     raise NotImplementedError() # TODO
 
-  def dict(self):
-    raise NotImplementedError() # TODO
+  def _matches_wildcard(self, name):
+    for p in self._keep_wildcards:
+      if p.match(name):
+        return True
+    return False
+
+  def dict(self, env = {}):
+    result = {}
+    for e in env:
+      if e in self._keep_values or self._matches_wildcard(e):
+        result[e] = env[e]
+    result.update(self._set)
+    return result
 
 #-----------------------------------------------------------------------------
 
@@ -271,7 +306,7 @@ class Suite:
 
   @property
   def environment(self):
-    return self._environment.dict()
+    return self._environment.dict(os.environ)
 
   #---------------------------------------------------------
 
