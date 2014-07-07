@@ -265,8 +265,9 @@ class Packages:
 
 class Suite:
   def __init__(self, suite, filename):
-    self._directory = os.path.abspath(os.path.dirname(filename))
     self._suite = suite
+    self._suite_file = os.path.abspath(filename)
+    self._directory = os.path.dirname(self._suite_file)
     self._main = MainSection(self._directory, suite)
     self._packages = Packages()
     self._environment = EnvironmentSection()
@@ -277,6 +278,28 @@ class Suite:
 
     for f in self.get_all('packages'):
       self._packages.read(f)
+
+    # coming from shell
+    self._environment.set("PATH", "/usr/local/bin:/usr/bin:/bin")
+    self._environment.set("SHELL", "/bin/sh")
+
+    # set by yumbootstrap
+    self._environment.set("SUITE",      self._suite)
+    self._environment.set("SUITE_CONF", self._suite_file)
+    self._environment.set("YUMBOOTSTRAP_DIR",  "yumbootstrap")
+    self._environment.set("YUM_CONF",          "yumbootstrap/yum.conf")
+
+    # coming from shell
+    for e in ["SHLVL", "TERM", "HOME", "USER", "LOGNAME", "PWD"]:
+      self._environment.keep(e)
+
+    # proxy-related, coming from shell
+    for e in ["http_proxy", "ftp_proxy"]:
+      self._environment.keep(e)
+
+    # set by yumbootstrap
+    for e in ["TARGET", "SCRIPT_NAME", "SCRIPT_PATH"]:
+      self._environment.keep(e)
 
   #---------------------------------------------------------
 
