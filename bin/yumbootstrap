@@ -231,7 +231,11 @@ def do_install(opts, suite, target):
     op("using built-in repositories")
     repositories = suite.repositories
 
-  yum_conf = yumbootstrap.yum.YumConfig(chroot = target, repos = repositories)
+  yum_conf = yumbootstrap.yum.YumConfig(
+    chroot = target,
+    repos = repositories,
+    env = suite.environment,
+  )
 
   # installing works also without adding key, but --nogpgcheck is passed to
   # Yum, so it's generally discouraged

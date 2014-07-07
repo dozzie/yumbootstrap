@@ -21,12 +21,13 @@ def mklist(value):
 #-----------------------------------------------------------------------------
 
 class YumConfig:
-  def __init__(self, chroot, repos = {}):
+  def __init__(self, chroot, repos = {}, env = None):
     self.chroot = os.path.abspath(chroot)
     self.repos = repos.copy() # shallow copy is enough
     self.gpg_keys = os.path.join(self.chroot, 'yumbootstrap/RPM-GPG-KEYS')
     self.pretend_has_keys = False
     #self.multilib = False
+    self.env = env
 
   def add_repository(self, name, url):
     self.repos[name] = url
@@ -115,7 +116,10 @@ class Yum:
 
     exclude_opts = ["--exclude=" + pkg for pkg in exclude]
 
-    sh.run(self._yum_call() + exclude_opts + ['install'] + mklist(packages))
+    sh.run(
+      self._yum_call() + exclude_opts + ['install'] + mklist(packages),
+      env = self.yum_conf.env,
+    )
 
   def group_install(self, groups, exclude = []):
     if self.rpmdb_fixed:
@@ -123,7 +127,10 @@ class Yum:
 
     exclude_opts = ["--exclude=" + pkg for pkg in exclude]
 
-    sh.run(self._yum_call() + exclude_opts + ['groupinstall'] + mklist(groups))
+    sh.run(
+      self._yum_call() + exclude_opts + ['groupinstall'] + mklist(groups),
+      env = self.yum_conf.env,
+    )
 
   def clean(self):
     shutil.rmtree(self.yum_conf.root_dir(), ignore_errors = True)
@@ -134,6 +141,7 @@ class Yum:
       ['python', '-c', 'import rpm; print rpm.expandMacro("%{_dbpath}")'],
       chroot = self.chroot,
       pipe = sh.READ,
+      env = self.yum_conf.env,
     ).strip()
 
     # input directory
@@ -148,6 +156,7 @@ class Yum:
       out_command = sh.run(
         ['db_load', tmp_file],
         chroot = self.chroot, pipe = sh.WRITE,
+        env = self.yum_conf.env,
       )
       bdb.db_dump(in_file, out_command)
       out_command.close()
