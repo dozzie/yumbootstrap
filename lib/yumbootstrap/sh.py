@@ -58,7 +58,7 @@ class OutPipe:
 
 #-----------------------------------------------------------------------------
 
-def run(command, chroot = None, pipe = None):
+def run(command, chroot = None, pipe = None, env = None):
   if not isinstance(command, (tuple, list)):
     command = command.split(' ')
 
@@ -72,6 +72,7 @@ def run(command, chroot = None, pipe = None):
   if pipe is None:
     proc = subprocess.Popen(
       command,
+      env = env,
       stdin = open('/dev/null'),
       preexec_fn = chroot_fun,
     )
@@ -80,6 +81,7 @@ def run(command, chroot = None, pipe = None):
   elif pipe is READ:
     proc = subprocess.Popen(
       command,
+      env = env,
       stdin = open('/dev/null'),
       stdout = subprocess.PIPE,
       preexec_fn = chroot_fun,
@@ -90,6 +92,7 @@ def run(command, chroot = None, pipe = None):
   elif pipe is WRITE:
     proc = subprocess.Popen(
       command,
+      env = env,
       stdin = subprocess.PIPE,
       preexec_fn = chroot_fun,
     )
