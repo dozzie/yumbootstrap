@@ -214,6 +214,7 @@ def do_install(opts, suite, target):
   from yumbootstrap.fs import touch
   import yumbootstrap.suites
 
+  os.environ["TARGET"] = os.path.abspath(target)
   suite = yumbootstrap.suites.load_suite(opts.suite_dir, suite)
 
   op("installing %s (release %s) to %s", suite.name, suite.release, target)
@@ -269,6 +270,16 @@ def do_install(opts, suite, target):
   if len(opts.groups) > 0:
     op("installing additional package groups requested from command line")
     yum.group_install(opts.groups, exclude = exclude)
+
+  if len(suite.post_install):
+    op("running post-install scripts")
+    from yumbootstrap import sh
+    # TODO: --skip-scripts, --just-scripts
+    for (script_name, script) in suite.post_install:
+      op("running %s", script_name)
+      os.environ['SCRIPT_NAME'] = script_name
+      os.environ['SCRIPT_PATH'] = script[0]
+      sh.run(script, env = suite.environment)
 
   # TODO: move this to a post_install script
   if opts.fix_rpmdb:

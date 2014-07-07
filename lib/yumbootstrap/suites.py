@@ -132,8 +132,7 @@ class ScriptSection(Section):
     return sorted(self._scripts.keys())
 
   def __iter__(self):
-    for (name, script) in self._scripts_global:
-      yield script
+    return self._scripts_global.__iter__()
 
   def skip(self, names):
     if isinstance(names, (list, tuple, dict)):
@@ -154,6 +153,9 @@ class ScriptSection(Section):
     for (name, script) in self._scripts_global:
       if name in names:
         yield script
+
+  def __len__(self):
+    return len(self._scripts_global)
 
   def __contains__(self, name):
     return (name in self._scripts)
