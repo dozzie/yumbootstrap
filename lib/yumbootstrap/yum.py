@@ -74,6 +74,7 @@ class YumConfig:
       'cachedir = /yumbootstrap/cache\n' \
       'logfile  = /yumbootstrap/log/yum.log\n'
     main += 'gpgcheck = %d\n' % (gpgcheck)
+    main += 'reposdir = %s/yumbootstrap/yum.repos.d\n' % (gpgcheck)
 
     repos = [repo(name, self.repos[name]) for name in sorted(self.repos)]
 
