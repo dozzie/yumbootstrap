@@ -39,9 +39,11 @@ class YumConfig:
       fs.touch(self.gpg_keys)
       open(self.gpg_keys, 'a').write(open(path).read())
 
+  @property
   def config_file(self):
     return os.path.join(self.chroot, 'yumbootstrap/yum.conf')
 
+  @property
   def root_dir(self):
     return os.path.join(self.chroot, 'yumbootstrap')
 
@@ -96,7 +98,7 @@ class Yum:
     # NOTE: writing yum.conf is delayed to the first operation
 
   def _yum_call(self):
-    yum_conf = self.yum_conf.config_file()
+    yum_conf = self.yum_conf.config_file
 
     if not os.path.exists(yum_conf):
       fs.touch(yum_conf, text = self.yum_conf.text())
@@ -133,7 +135,7 @@ class Yum:
     )
 
   def clean(self):
-    shutil.rmtree(self.yum_conf.root_dir(), ignore_errors = True)
+    shutil.rmtree(self.yum_conf.root_dir, ignore_errors = True)
 
   def fix_rpmdb(self):
     current_rpmdb_dir = rpm.expandMacro('%{_dbpath}')
