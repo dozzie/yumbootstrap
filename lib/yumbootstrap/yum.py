@@ -138,26 +138,27 @@ class Yum:
   def clean(self):
     shutil.rmtree(self.yum_conf.root_dir, ignore_errors = True)
 
-  def fix_rpmdb(self):
+  def fix_rpmdb(self, expected_rpmdb_dir = None, db_load = 'db_load'):
     current_rpmdb_dir = rpm.expandMacro('%{_dbpath}')
-    expected_rpmdb_dir = sh.run(
-      ['python', '-c', 'import rpm; print rpm.expandMacro("%{_dbpath}")'],
-      chroot = self.chroot,
-      pipe = sh.READ,
-      env = self.yum_conf.env,
-    ).strip()
+    if expected_rpmdb_dir is None:
+      expected_rpmdb_dir = sh.run(
+        ['python', '-c', 'import rpm; print rpm.expandMacro("%{_dbpath}")'],
+        chroot = self.chroot,
+        pipe = sh.READ,
+        env = self.yum_conf.env,
+      ).strip()
 
     # input directory
     rpmdb_dir = os.path.join(self.chroot, current_rpmdb_dir.lstrip('/'))
 
     for db in os.listdir(rpmdb_dir):
-      if db.startswith('.'): continue
+      if db.startswith('.') or db.startswith('_'): continue
       in_file = os.path.join(rpmdb_dir, db)
       tmp_file = os.path.join(expected_rpmdb_dir, db + '.tmp')
       out_file = os.path.join(expected_rpmdb_dir, db)
 
       out_command = sh.run(
-        ['db_load', tmp_file],
+        [db_load, tmp_file],
         chroot = self.chroot, pipe = sh.WRITE,
         env = self.yum_conf.env,
       )
