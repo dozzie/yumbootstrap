@@ -134,26 +134,6 @@ class ScriptSection(Section):
   def __iter__(self):
     return self._scripts_global.__iter__()
 
-  def skip(self, names):
-    if isinstance(names, (list, tuple, dict)):
-      names = set(names)
-    else:
-      names = set([names])
-
-    for (name, script) in self._scripts_global:
-      if name not in names:
-        yield script
-
-  def just(self, names):
-    if isinstance(names, (list, tuple, dict)):
-      names = set(names)
-    else:
-      names = set([names])
-
-    for (name, script) in self._scripts_global:
-      if name in names:
-        yield script
-
   def __len__(self):
     return len(self._scripts_global)
 
