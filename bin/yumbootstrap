@@ -4,8 +4,10 @@ import os
 import sys
 import optparse
 import time
+import errno
 
 import yumbootstrap.yum
+import yumbootstrap.suites
 from yumbootstrap.exceptions import YBError
 
 #-----------------------------------------------------------------------------
@@ -19,7 +21,7 @@ o = optparse.OptionParser(
           '\n  %prog [options] --print-config <suite> <target> > yum.conf'
           '\n  %prog [options] --list-suites'
           '\n  %prog [options] <suite|target> --list-scripts'
-          '\n  %prog [options] <target> --just-scripts <script> <script> ...'
+          '\n  %prog [options] <target> --just-scripts [script script ...]'
           '',
   description = 'Install Yum-based distribution in a chroot environment.',
 )
@@ -31,7 +33,7 @@ expected_nargs = {
   'yum.conf':     [2],
   'list_suites':  [0],
   'list_scripts': [1],
-  'scripts':      xrange(2, 0xFFFFFFFF), # enough for any number of args
+  'scripts':      xrange(1, 0xFFFFFFFF), # enough for any number of args
   #'download':     [?],
   #'second_stage': [?],
   #'tarball':      [?],
@@ -210,16 +212,76 @@ verbose = opts.verbose
 
 #-----------------------------------------------------------
 
-def do_install(opts, suite, target):
+# helper function
+def write_cached_suite(yumbootstrap_dir, suite_dir, suite_name):
   from yumbootstrap.fs import touch
-  import yumbootstrap.suites
+  # just hope nobody uses directory names with whitespaces (NL, space or
+  # similar)
+  suite_file_content = "suite_name: %s\nsuite_dir: %s" % \
+                       (suite_name, os.path.abspath(suite_dir))
+  touch(yumbootstrap_dir, 'suite_location', text = suite_file_content)
 
+#-----------------------------------------------------------
+
+# helper function
+def read_cached_suite(target):
+  yum_conf = yumbootstrap.yum.YumConfig(chroot = target)
+  suite_location_file = os.path.join(yum_conf.root_dir, 'suite_location')
+  try:
+    suite_location = dict([
+      line.strip().split(': ', 1)
+      for line in open(suite_location_file).readlines()
+    ])
+    suite = yumbootstrap.suites.load_suite(
+      suite_location['suite_dir'],
+      suite_location['suite_name'],
+    )
+    return suite
+  except IOError, e:
+    if e.errno == errno.ENOENT:
+      raise YBError("\"%s\" is not a prepared target", target, exit = 1)
+    else:
+      raise YBError('errno=%d: %s', e.errno, e.strerror)
+
+#-----------------------------------------------------------
+
+# helper function
+def run_post_install_scripts(suite, skip = [], just = []):
+  op("executing post-install scripts")
+  from yumbootstrap import sh
+
+  skip = set(skip)
+  if len(just) == 0:
+    just = set(suite.post_install.names())
+  else:
+    just = set(just)
+
+  for (script_name, script) in suite.post_install:
+    if script_name in skip or script_name not in just:
+      op("skipping %s", script_name)
+      continue
+    op("running %s", script_name)
+    os.environ['SCRIPT_NAME'] = script_name
+    os.environ['SCRIPT_PATH'] = script[0]
+    sh.run(script, env = suite.environment)
+
+#-----------------------------------------------------------
+
+# helper function
+def set_scripts_environment(opts, target):
   os.environ["TARGET"] = os.path.abspath(target)
-  if verbose:
+  if opts.verbose:
     os.environ["VERBOSE"] = "true"
   else:
     os.environ["VERBOSE"] = "false"
-  suite = yumbootstrap.suites.load_suite(opts.suite_dir, suite)
+
+#-----------------------------------------------------------
+
+def do_install(opts, suite_name, target):
+  from yumbootstrap.fs import touch
+
+  set_scripts_environment(opts, target)
+  suite = yumbootstrap.suites.load_suite(opts.suite_dir, suite_name)
 
   op("installing %s (release %s) to %s", suite.name, suite.release, target)
 
@@ -241,6 +303,8 @@ def do_install(opts, suite, target):
     repos = repositories,
     env = suite.environment,
   )
+
+  write_cached_suite(yum_conf.root_dir, opts.suite_dir, suite_name)
 
   # installing works also without adding key, but --nogpgcheck is passed to
   # Yum, so it's generally discouraged
@@ -275,24 +339,36 @@ def do_install(opts, suite, target):
     op("installing additional package groups requested from command line")
     yum.group_install(opts.groups, exclude = exclude)
 
-  if len(suite.post_install):
-    op("executing post-install scripts")
-    from yumbootstrap import sh
-    # TODO: --skip-scripts, --just-scripts
-    for (script_name, script) in suite.post_install:
-      op("running %s", script_name)
-      os.environ['SCRIPT_NAME'] = script_name
-      os.environ['SCRIPT_PATH'] = script[0]
-      sh.run(script, env = suite.environment)
+  if len(suite.post_install) > 0:
+    if opts.run_scripts:
+      run_post_install_scripts(suite, skip = opts.skip)
+    else:
+      op("skipping post-install scripts altogether")
 
   op("operation finished")
 
 #-----------------------------------------------------------
 
 def do_list_suites(opts):
-  import yumbootstrap.suites
   for suite in yumbootstrap.suites.list_suites(opts.suite_dir):
     print suite
+
+#-----------------------------------------------------------
+
+def do_list_scripts(opts, target):
+  if target in yumbootstrap.suites.list_suites(opts.suite_dir):
+    suite = yumbootstrap.suites.load_suite(opts.suite_dir, target)
+  else:
+    suite = read_cached_suite(target)
+  for name in suite.post_install.names():
+    print name
+
+#-----------------------------------------------------------
+
+def do_scripts(opts, target, *scripts):
+  set_scripts_environment(opts, target)
+  suite = read_cached_suite(target)
+  run_post_install_scripts(suite, skip = opts.skip, just = scripts)
 
 #-----------------------------------------------------------
 
@@ -325,6 +401,10 @@ try:
     do_install(opts, *args)
   elif opts.action == 'list_suites':
     do_list_suites(opts, *args)
+  elif opts.action == 'list_scripts':
+    do_list_scripts(opts, *args)
+  elif opts.action == 'scripts':
+    do_scripts(opts, *args)
   elif opts.action == 'yum.conf':
     do_yum_conf(opts, *args)
   else:

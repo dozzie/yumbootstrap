@@ -1,6 +1,4 @@
   * multilib support
   * --verbose: use `logging' module
-  * --no-scripts, --just-scripts NAME1 NAME2 ..., --list-scripts
-  * --skip-script=NAME
   * [pre_install], --skip-script=pre:name|post:name|name
   * documentation
