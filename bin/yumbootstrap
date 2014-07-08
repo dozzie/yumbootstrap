@@ -18,6 +18,8 @@ o = optparse.OptionParser(
   usage = '\n  %prog [options] <suite> <target>'
           '\n  %prog [options] --print-config <suite> <target> > yum.conf'
           '\n  %prog [options] --list-suites'
+          '\n  %prog [options] <suite|target> --list-scripts'
+          '\n  %prog [options] <target> --just-scripts <script> <script> ...'
           '',
   description = 'Install Yum-based distribution in a chroot environment.',
 )
@@ -25,9 +27,11 @@ o = optparse.OptionParser(
 #-----------------------------------------------------------
 
 expected_nargs = {
-  'install':     [2],
-  'yum.conf':    [2],
-  'list_suites': [0],
+  'install':      [2],
+  'yum.conf':     [2],
+  'list_suites':  [0],
+  'list_scripts': [1],
+  'scripts':      xrange(2, 0xFFFFFFFF), # enough for any number of args
   #'download':     [?],
   #'second_stage': [?],
   #'tarball':      [?],
@@ -62,14 +66,25 @@ def op(message, *args):
 #-----------------------------------------------------------
 
 o.add_option(
+  '--print-config',
+  action = 'store_const', dest = 'action', const = 'yum.conf',
+  help = 'print Yum configuration which will be used by yumbootstrap',
+)
+o.add_option(
   '--list-suites',
   action = 'store_const', dest = 'action', const = 'list_suites',
   help = 'list available suites and exit',
 )
 o.add_option(
-  '--print-config',
-  action = 'store_const', dest = 'action', const = 'yum.conf',
-  help = 'print Yum configuration which will be used by yumbootstrap',
+  '--list-scripts',
+  action = 'store_const', dest = 'action', const = 'list_scripts',
+  help = 'list scripts in a suite (or in a target created with --no-scripts)'
+         ' and exit',
+)
+o.add_option(
+  '--just-scripts',
+  action = 'store_const', dest = 'action', const = 'scripts',
+  help = 'list available suites and exit',
 )
 
 #-----------------------------------------------------------
@@ -95,6 +110,18 @@ o.add_option(
 #  help = 'specify a proxy to use when fetching files',
 #  metavar = 'HOST:PORT',
 #)
+o.add_option(
+  '--skip-script',
+  action = 'append', dest = 'skip', default = [],
+  help = 'skip this post-install script(s) (may be specified multiple times;'
+         ' see also --list-scripts)',
+  metavar = 'NAME',
+)
+o.add_option(
+  '--no-scripts',
+  action = 'store_false', dest = 'run_scripts', default = True,
+  help = "don't run any post-install scripts after installation",
+)
 o.add_option(
   '--suite-dir',
   action = 'store', dest = 'suite_dir', type = 'string', default = SUITE_DIR,
