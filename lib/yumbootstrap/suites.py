@@ -346,7 +346,7 @@ class Suite:
       line = line.strip()
       lineno += 1
 
-      if line == '' or line.startswith("#"):
+      if line == '' or line.startswith("#") or line.startswith(";"):
         continue
 
       if line[0] == '[' and line[-1] == ']':
