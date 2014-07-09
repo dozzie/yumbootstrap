@@ -1,0 +1,22 @@
+name = Fedora
+release = 19
+
+gpg_key =  gpg/RPM-GPG-KEY-fedora-19-primary
+gpg_key =  gpg/RPM-GPG-KEY-fedora-19-secondary
+
+packages = packages/${suite}.list
+
+[post_install]
+finalize = scripts/fix_rpmdb.py
+finalize = scripts/clean_yumbootstrap.py
+
+[repositories]
+fedora         = http://download.fedoraproject.org/pub/fedora/linux/releases/19/Everything/$basearch/os/
+fedora-updates = http://download.fedoraproject.org/pub/fedora/linux/updates/19/$basearch/
+
+[environment]
+#PYTHONPATH=...
+#PYTHONPATH
+#SUDO_*
+
+# vim:ft=dosini

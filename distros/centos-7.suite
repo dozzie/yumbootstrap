@@ -1,0 +1,22 @@
+name = CentOS
+release = 7
+
+gpg_key =  gpg/RPM-GPG-KEY-CentOS-7
+gpg_key ?= gpg/RPM-GPG-KEY-CentOS-Security-7
+
+packages = packages/${suite}.list
+
+[post_install]
+finalize = scripts/fix_rpmdb.py
+finalize = scripts/clean_yumbootstrap.py
+
+[repositories]
+centos         = http://mirror.centos.org/centos/7/os/$basearch/
+centos-updates = http://mirror.centos.org/centos/7/updates/$basearch/
+
+[environment]
+#PYTHONPATH=...
+#PYTHONPATH
+#SUDO_*
+
+# vim:ft=dosini

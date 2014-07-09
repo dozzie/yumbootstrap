@@ -1,0 +1,25 @@
+name = Fedora
+release = 17
+
+gpg_key =  gpg/RPM-GPG-KEY-fedora-17-primary
+gpg_key =  gpg/RPM-GPG-KEY-fedora-17-secondary
+
+packages = packages/${suite}.list
+
+[post_install]
+finalize = scripts/fix_rpmdb.py
+finalize = scripts/clean_yumbootstrap.py
+
+[repositories]
+# for other releases see
+#   http://archives.fedoraproject.org/pub/archive/fedora/
+# GPG keys for RPM signing can be obtained from here:
+#   https://fedoraproject.org/en/keys
+fedora = http://archives.fedoraproject.org/pub/archive/fedora/linux/releases/17/Everything/$basearch/os/
+
+[environment]
+#PYTHONPATH=...
+#PYTHONPATH
+#SUDO_*
+
+# vim:ft=dosini
