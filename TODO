@@ -2,3 +2,7 @@
   * --verbose: use `logging' module
   * [pre_install], --skip-script=pre:name|post:name|name
   * documentation
+    * installation guide
+    * examples of use
+    * suite configuration syntax
+  * installation procedure, including debianization and RPM spec
