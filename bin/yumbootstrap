@@ -373,12 +373,13 @@ def do_scripts(opts, target, *scripts):
 #-----------------------------------------------------------
 
 def do_yum_conf(opts, suite, target):
-  suite = prepare_suite(suite)
+  import yumbootstrap.suites
+  suite = yumbootstrap.suites.load_suite(opts.suite_dir, suite)
 
   if len(opts.repositories) > 0:
     repositories = opts.repositories
   else:
-    repositories = suite.repositories()
+    repositories = suite.repositories
 
   yum_conf = yumbootstrap.yum.YumConfig(chroot = target, repos = repositories)
 
