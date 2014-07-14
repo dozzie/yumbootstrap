@@ -36,7 +36,7 @@ def load_suite(directory, suite_name):
 # generic section
 class Section(object):
   LINE = re.compile(
-    r'^(?P<name>[a-zA-Z0-9_-]+)\s*=\s*(?P<value>\S.*|)$'
+    r'^(?P<name>[a-zA-Z0-9_.-]+)\s*=\s*(?P<value>\S.*|)$'
   )
 
   def __init__(self):
@@ -69,7 +69,7 @@ class Section(object):
 # two keys get special treatment
 class MainSection(Section):
   LINE = re.compile(
-    r'^(?P<name>[a-zA-Z0-9_-]+)\s*(?P<set>\??=)\s*(?P<value>\S.*|)$'
+    r'^(?P<name>[a-zA-Z0-9_.-]+)\s*(?P<set>\??=)\s*(?P<value>\S.*|)$'
   )
 
   def __init__(self, directory, suite):
@@ -101,7 +101,7 @@ class RepositorySection(Section):
 # remembers order between all the entries, not only in group
 class ScriptSection(Section):
   LINE = re.compile(
-    r'^(?P<name>[a-zA-Z0-9_-]+)\s*(?P<set>\??=)\s*(?P<value>\S.*|)$'
+    r'^(?P<name>[a-zA-Z0-9_.-]+)\s*(?P<set>\??=)\s*(?P<value>\S.*|)$'
   )
 
   def __init__(self, directory, suite):
@@ -150,9 +150,9 @@ class EnvironmentSection(Section):
   LINE = re.compile(
     '^(?:'
       '(?P<variable>'
-        r'(?P<name>[a-zA-Z0-9_-]+)\s*=\s*(?P<value>\S.*|)'
+        r'(?P<name>[a-zA-Z0-9_.-]+)\s*=\s*(?P<value>\S.*|)'
       ')|(?P<keep>'
-        r'(?P<keep_name>[a-zA-Z0-9_*]+)'
+        r'(?P<keep_name>[a-zA-Z0-9_.*-]+)'
       ')'
     ')$'
   )
