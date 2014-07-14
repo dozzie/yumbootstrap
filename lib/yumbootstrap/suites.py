@@ -19,12 +19,12 @@ def list_suites(directory):
 
 def load_suite(directory, suite_name):
   if '/' in suite_name:
-    raise YBError('Unrecognized suite: %s', suite_name)
+    raise YBError('Unrecognized suite: %s', suite_name, exit = 1)
 
   suite_file = os.path.join(directory, suite_name + '.suite')
 
   if not os.path.isfile(suite_file):
-    raise YBError('Unrecognized suite: %s', suite_name)
+    raise YBError('Unrecognized suite: %s', suite_name, exit = 1)
 
   try:
     return Suite(suite_name, suite_file)
