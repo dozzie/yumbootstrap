@@ -1,0 +1,23 @@
+name = CentOS
+release = 4.0
+
+gpg_key =  gpg/historic/RPM-GPG-KEY-CentOS-4
+
+packages = packages/${suite}.list
+
+[post_install]
+# Red Hat and CentOS release 4 leave /proc mounted in target directory
+umount_proc = scripts/umount_proc.sh
+finalize = scripts/fix_rpmdb.old-rpm.py
+finalize = scripts/clean_yumbootstrap.py
+
+[repositories]
+centos-4.0         = http://vault.centos.org/4.0/os/$basearch/
+centos-4.0-updates = http://vault.centos.org/4.0/updates/$basearch/
+
+[environment]
+#PYTHONPATH=...
+#PYTHONPATH
+#SUDO_*
+
+# vim:ft=dosini
