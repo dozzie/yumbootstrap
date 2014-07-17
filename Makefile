@@ -1,8 +1,18 @@
 #!/usr/bin/make -f
 
-.PHONY: default tarball egg clean
+DESTDIR =
+PREFIX = /usr/local
+BINDIR = $(PREFIX)/sbin
+SYSCONFDIR = $(PREFIX)/etc
+
+.PHONY: default install-notmodule tarball egg clean
 
 default: tarball
+
+install-notmodule:
+	install -D -m 755 bin/yumbootstrap $(DESTDIR)$(BINDIR)/yumbootstrap
+	install -d -m 755 $(DESTDIR)$(SYSCONFDIR)/yumbootstrap/suites
+	cp -R distros/* $(DESTDIR)$(SYSCONFDIR)/yumbootstrap/suites
 
 tarball:
 	python setup.py sdist --formats=zip

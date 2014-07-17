@@ -1,0 +1,3 @@
+/etc/yumbootstrap
+/usr/sbin/yumbootstrap
+/usr/lib/python2.*
