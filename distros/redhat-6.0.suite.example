@@ -1,0 +1,23 @@
+name = Red Hat
+release = 6.0
+
+gpg_key = gpg/RPM-GPG-KEY-redhat-6
+
+packages = packages/redhat-6.list
+
+[post_install]
+finalize = scripts/fix_rpmdb.py
+finalize = scripts/clean_yumbootstrap.py
+
+[repositories]
+; TODO: adjust the URL ("http://repo.example.net/rhel/" part)
+; NOTE: you only need one of the two
+redhat-server      = http://repo.example.net/rhel/6.0/Server/$basearch/os/
+redhat-workstation = http://repo.example.net/rhel/6.0/Workstation/$basearch/os/
+
+[environment]
+;PYTHONPATH=...
+;PYTHONPATH
+;SUDO_*
+
+; vim:ft=dosini

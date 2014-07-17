@@ -1,0 +1,25 @@
+name = Red Hat
+release = 4u3
+
+gpg_key = gpg/historic/RPM-GPG-KEY-redhat-4
+
+packages = packages/redhat-4.list
+
+[post_install]
+; Red Hat and CentOS release 4 leave /proc mounted in target directory
+umount_proc = scripts/umount_proc.sh
+finalize = scripts/fix_rpmdb.old-rpm.py
+finalize = scripts/clean_yumbootstrap.py
+
+[repositories]
+; TODO: adjust the URL ("http://repo.example.net/rhel/" part)
+; NOTE: you only need one of the two
+redhat-as = http://repo.example.net/rhel/4u3/os/AS/$basearch/RedHat/RPMS
+redhat-es = http://repo.example.net/rhel/4u3/os/ES/$basearch/RedHat/RPMS
+
+[environment]
+;PYTHONPATH=...
+;PYTHONPATH
+;SUDO_*
+
+; vim:ft=dosini
