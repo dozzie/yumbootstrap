@@ -1,8 +1,6 @@
-  * multilib support
+  * RPM spec
   * --verbose: use `logging' module
+  * installation of architecture different than parent's (e.g. i686 under
+    x86_64)
+  * multilib support
   * [pre_install], --skip-script=pre:name|post:name|name
-  * documentation
-    * installation guide
-    * examples of use
-    * suite configuration syntax
-  * installation procedure, including debianization and RPM spec
