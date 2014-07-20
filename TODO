@@ -1,5 +1,4 @@
   * RPM spec
-  * --verbose: use `logging' module
   * installation of architecture different than parent's (e.g. i686 under
     x86_64)
   * multilib support

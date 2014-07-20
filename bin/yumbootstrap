@@ -3,8 +3,9 @@
 import os
 import sys
 import optparse
-import time
 import errno
+import logging
+import yumbootstrap.log
 
 import yumbootstrap.yum
 import yumbootstrap.suites
@@ -13,6 +14,12 @@ from yumbootstrap.exceptions import YBError
 #-----------------------------------------------------------------------------
 
 SUITE_DIR = '/etc/yumbootstrap/suites'
+
+#-----------------------------------------------------------------------------
+
+logger = logging.getLogger()
+logger.addHandler(yumbootstrap.log.ProgressHandler())
+#logger.setLevel(logging.WARNING) # this is default loglevel
 
 #-----------------------------------------------------------------------------
 
@@ -55,15 +62,6 @@ def add_kv_list(option, opt, value, parser, attr):
     raise optparse.OptionValueError('"%s" is not in NAME=VALUE format' % value)
   (k,v) = value.split('=', 1)
   getattr(parser.values, attr)[k] = v
-
-#-----------------------------------------------------------
-
-# to be filled after o.parse_args()
-verbose = False
-
-def op(message, *args):
-  if verbose:
-    print time.strftime('[%T] ') + (message % args)
 
 #-----------------------------------------------------------
 
@@ -206,7 +204,8 @@ opts, args = o.parse_args()
 if len(args) not in expected_nargs[opts.action]:
   o.error("wrong number of arguments")
 
-verbose = opts.verbose
+if opts.verbose:
+  logger.setLevel(logging.INFO)
 
 #-----------------------------------------------------------------------------
 
@@ -247,7 +246,7 @@ def read_cached_suite(target):
 
 # helper function
 def run_post_install_scripts(suite, skip = [], just = []):
-  op("executing post-install scripts")
+  logger.info("executing post-install scripts")
   from yumbootstrap import sh
 
   skip = set(skip)
@@ -258,9 +257,9 @@ def run_post_install_scripts(suite, skip = [], just = []):
 
   for (script_name, script) in suite.post_install:
     if script_name in skip or script_name not in just:
-      op("skipping %s", script_name)
+      logger.info("skipping %s", script_name)
       continue
-    op("running %s", script_name)
+    logger.info("running %s", script_name)
     os.environ['SCRIPT_NAME'] = script_name
     os.environ['SCRIPT_PATH'] = script[0]
     sh.run(script, env = suite.environment)
@@ -283,19 +282,21 @@ def do_install(opts, suite_name, target):
   set_scripts_environment(opts, target)
   suite = yumbootstrap.suites.load_suite(opts.suite_dir, suite_name)
 
-  op("installing %s (release %s) to %s", suite.name, suite.release, target)
+  logger.info("installing %s (release %s) to %s",
+              suite.name, suite.release, target)
 
-  op("preparing empty /etc/fstab and /etc/mtab")
+  logger.info("preparing empty /etc/fstab and /etc/mtab")
   os.umask(022)
   # prepare target directory with an empty /etc/fstab
   touch(target, 'etc/fstab', text = '# empty fstab')
   touch(target, 'etc/mtab')
 
   if len(opts.repositories) > 0:
-    op("using custom repositories: %s", ", ".join(sorted(opts.repositories)))
+    logger.info("using custom repositories: %s",
+                ", ".join(sorted(opts.repositories)))
     repositories = opts.repositories
   else:
-    op("using built-in repositories")
+    logger.info("using built-in repositories")
     repositories = suite.repositories
 
   yum_conf = yumbootstrap.yum.YumConfig(
@@ -309,7 +310,7 @@ def do_install(opts, suite_name, target):
   # installing works also without adding key, but --nogpgcheck is passed to
   # Yum, so it's generally discouraged
   if len(opts.gpg_keys) > 0 or len(suite.gpg_keys) > 0:
-    op("adding GPG keys")
+    logger.info("adding GPG keys")
     for keyfile in opts.gpg_keys:
       yum_conf.add_key(keyfile)
     for keyfile in suite.gpg_keys:
@@ -327,25 +328,27 @@ def do_install(opts, suite_name, target):
 
   # main set of packages (should already include yum and /usr/bin/db_load, so
   # `yum.fix_rpmdb()' works)
-  op("installing default packages for %s %s", suite.name, suite.release)
+  logger.info("installing default packages for %s %s",
+              suite.name, suite.release)
   install = suite.packages.install + ['@' + g for g in suite.packages.groups]
   yum.install(install, exclude = exclude)
 
   # requested additional packages
   if len(opts.include) > 0:
-    op("installing additional packages requested from command line")
+    logger.info("installing additional packages requested from command line")
     yum.install(opts.include, exclude = exclude)
   if len(opts.groups) > 0:
-    op("installing additional package groups requested from command line")
+    logger.info("installing additional package groups requested from "
+                "command line")
     yum.group_install(opts.groups, exclude = exclude)
 
   if len(suite.post_install) > 0:
     if opts.run_scripts:
       run_post_install_scripts(suite, skip = opts.skip)
     else:
-      op("skipping post-install scripts altogether")
+      logger.info("skipping post-install scripts altogether")
 
-  op("operation finished")
+  logger.info("operation finished")
 
 #-----------------------------------------------------------
 
@@ -373,6 +376,7 @@ def do_scripts(opts, target, *scripts):
 #-----------------------------------------------------------
 
 def do_yum_conf(opts, suite, target):
+  logger.setLevel(logging.WARNING) # do not honour --verbose option
   import yumbootstrap.suites
   suite = yumbootstrap.suites.load_suite(opts.suite_dir, suite)
 

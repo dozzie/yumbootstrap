@@ -8,6 +8,9 @@ import bdb
 import sh
 import fs
 
+import logging
+logger = logging.getLogger("yum")
+
 #-----------------------------------------------------------------------------
 
 def mklist(value):
@@ -49,6 +52,7 @@ class YumConfig:
 
   def text(self):
     if self.pretend_has_keys or os.path.exists(self.gpg_keys):
+      logger.info("GPG keys defined, adding them to repository configs")
       gpgcheck = 1
       def repo(name, url):
         return \
@@ -58,6 +62,7 @@ class YumConfig:
           'baseurl = %s\n' \
           'gpgkey = file://%s\n' % (name, name, url, self.gpg_keys)
     else:
+      logger.warn("no GPG keys defined, RPM signature verification disabled")
       gpgcheck = 0
       def repo(name, url):
         return \
@@ -102,6 +107,7 @@ class Yum:
     yum_conf = self.yum_conf.config_file
 
     if not os.path.exists(yum_conf):
+      logger.info("%s doesn't exist, creating one", yum_conf)
       fs.touch(yum_conf, text = self.yum_conf.text())
 
     opts = [self.yum, '-c', yum_conf, '--installroot', self.chroot, '-y']
@@ -136,9 +142,11 @@ class Yum:
     )
 
   def clean(self):
+    logger.info("removing directory %s", self.yum_conf.root_dir)
     shutil.rmtree(self.yum_conf.root_dir, ignore_errors = True)
 
   def fix_rpmdb(self, expected_rpmdb_dir = None, db_load = 'db_load'):
+    logger.info("fixing RPM database for guest")
     current_rpmdb_dir = rpm.expandMacro('%{_dbpath}')
     if expected_rpmdb_dir is None:
       expected_rpmdb_dir = sh.run(
@@ -153,6 +161,7 @@ class Yum:
 
     for db in os.listdir(rpmdb_dir):
       if db.startswith('.') or db.startswith('_'): continue
+      logger.info("processing file %s", db)
       in_file = os.path.join(rpmdb_dir, db)
       tmp_file = os.path.join(expected_rpmdb_dir, db + '.tmp')
       out_file = os.path.join(expected_rpmdb_dir, db)
@@ -171,6 +180,8 @@ class Yum:
 
     if current_rpmdb_dir != expected_rpmdb_dir:
       # Red Hat under Debian; delete old directory (~/.rpmdb possibly)
+      logger.info("removing old RPM DB directory: $TARGET%s",
+                  current_rpmdb_dir)
       shutil.rmtree(os.path.join(self.chroot, current_rpmdb_dir.lstrip('/')))
 
     self.rpmdb_fixed = True
