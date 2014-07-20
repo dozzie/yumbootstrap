@@ -1,3 +1,9 @@
+yumbootstrap (0.0.2-1) stable; urgency=low
+
+  * Printing progress moved to `logging' module.
+
+ -- Stanislaw Klekot <dozzie@jarowit.net>  Sun, 20 Jul 2014 14:47:47 +0200
+
 yumbootstrap (0.0.1-1) stable; urgency=low
 
   * Initial release.
