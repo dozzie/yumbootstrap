@@ -6,9 +6,16 @@ CentOS, Fedora) in a chroot directory. Idea behind it is stolen from Debian's
 debootstrap. It's planned for yumbootstrap to work along with templates for
 `lxc-create`.
 
-There is another project of similar purpose:
-[Rinse](http://www.steve.org.uk/Software/rinse/), but seems unmaintained and
-I generally didn't like its architecture and configuration.
+There is another project of similar purpose called
+[Rinse](http://www.steve.org.uk/Software/rinse/). yumbootstrap differs from
+Rinse as follows:
+
+  * yumbootstrap uses Yum to resolve dependencies, so adding packages to
+    installation list is easier (no need to track dependencies manually).
+  * Using multiple Yum repositories for installation is supported.
+  * yumbootstrap checks signatures on installed RPM packages.
+  * yumbootstrap doesn't depend on Yum mirror to list directory contents, so
+    it's less work to setup local mirror usable with yumbootstrap.
 
 Examples of use
 ---------------
