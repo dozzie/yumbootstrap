@@ -1,3 +1,9 @@
+yumbootstrap (0.0.3-1) stable; urgency=low
+
+  * Fixed installing RH6.4 under Fedora.
+
+ -- Stanislaw Klekot <dozzie@jarowit.net>  Thu, 24 Jul 2014 19:29:28 +0200
+
 yumbootstrap (0.0.2-1) stable; urgency=low
 
   * Printing progress moved to `logging' module.
