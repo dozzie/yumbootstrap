@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import rpm
+import rpm as rpm_mod
 import os
 import shutil
 
@@ -145,9 +145,10 @@ class Yum:
     logger.info("removing directory %s", self.yum_conf.root_dir)
     shutil.rmtree(self.yum_conf.root_dir, ignore_errors = True)
 
-  def fix_rpmdb(self, expected_rpmdb_dir = None, db_load = 'db_load'):
+  def fix_rpmdb(self, expected_rpmdb_dir = None,
+                db_load = 'db_load', rpm = 'rpm'):
     logger.info("fixing RPM database for guest")
-    current_rpmdb_dir = rpm.expandMacro('%{_dbpath}')
+    current_rpmdb_dir = rpm_mod.expandMacro('%{_dbpath}')
     if expected_rpmdb_dir is None:
       expected_rpmdb_dir = sh.run(
         ['python', '-c', 'import rpm; print rpm.expandMacro("%{_dbpath}")'],
@@ -159,24 +160,33 @@ class Yum:
     # input directory
     rpmdb_dir = os.path.join(self.chroot, current_rpmdb_dir.lstrip('/'))
 
-    for db in os.listdir(rpmdb_dir):
-      if db.startswith('.') or db.startswith('_'): continue
-      logger.info("processing file %s", db)
-      in_file = os.path.join(rpmdb_dir, db)
-      tmp_file = os.path.join(expected_rpmdb_dir, db + '.tmp')
-      out_file = os.path.join(expected_rpmdb_dir, db)
+    logger.info('converting "Packages" file')
+    in_pkg_db = os.path.join(rpmdb_dir, 'Packages')
+    tmp_pkg_db = os.path.join(expected_rpmdb_dir, 'Packages.tmp')
+    out_pkg_db = os.path.join(expected_rpmdb_dir, 'Packages')
+    out_command = sh.run(
+      [db_load, tmp_pkg_db],
+      chroot = self.chroot, pipe = sh.WRITE,
+      env = self.yum_conf.env,
+    )
+    bdb.db_dump(in_pkg_db, out_command)
+    out_command.close()
+    os.rename(
+      os.path.join(self.chroot, tmp_pkg_db.lstrip('/')),
+      os.path.join(self.chroot, out_pkg_db.lstrip('/'))
+    )
 
-      out_command = sh.run(
-        [db_load, tmp_file],
-        chroot = self.chroot, pipe = sh.WRITE,
-        env = self.yum_conf.env,
-      )
-      bdb.db_dump(in_file, out_command)
-      out_command.close()
-      os.rename(
-        os.path.join(self.chroot, tmp_file.lstrip('/')),
-        os.path.join(self.chroot, out_file.lstrip('/'))
-      )
+    logger.info('removing all the files except "Packages"')
+    for f in os.listdir(rpmdb_dir):
+      if f in ('.', '..', 'Packages'): continue
+      os.unlink(os.path.join(rpmdb_dir, f))
+
+    logger.info("running `rpm --rebuilddb'")
+    sh.run(
+      [rpm, '--rebuilddb'],
+      chroot = self.chroot,
+      env = self.yum_conf.env,
+    )
 
     if current_rpmdb_dir != expected_rpmdb_dir:
       # Red Hat under Debian; delete old directory (~/.rpmdb possibly)
