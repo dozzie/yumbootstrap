@@ -1,13 +1,21 @@
 #!/usr/bin/make -f
-
+#
+# Makefile for yumbootstrap.
+#
 DESTDIR =
 PREFIX = /usr/local
 BINDIR = $(PREFIX)/sbin
 SYSCONFDIR = $(PREFIX)/etc
 
-.PHONY: default install-notmodule tarball egg clean srpm
+all: srpm rpm done-build
+
+.PHONY: all default install-notmodule tarball egg prep prep1 prep2 srpm rpm \
+	mostlyclean clean-rpm clean-srpm clean done-build
 
 default: tarball
+
+install:
+	# @TODO
 
 install-notmodule:
 	install -D -m 755 bin/yumbootstrap $(DESTDIR)$(BINDIR)/yumbootstrap
@@ -20,28 +28,87 @@ tarball:
 egg:
 	python setup.py bdist_egg
 
-clean:
+prep: prep1 prep2
+
+prep1:
+	$(eval VERSION := $(shell awk '$$1 == "%define" && $$2 == "_version" {print $$3}' redhat/*.spec))
+	$(eval PKGNAME := $(shell awk 'tolower($$1) ~ /^name:/ {print $$2}' redhat/*.spec))
+	$(eval RPMARCH := $(shell awk 'tolower($$1) ~ /^buildarch:/ {print $$2}' redhat/*.spec))
+	$(eval WORKDIR := rpm-build)
+	@if test -z $(PKGNAME); then \
+		echo; \
+		echo "Build failed: Can't determine PKGNAME (Package Name)."; \
+		exit 1; \
+	fi;
+	@if test -z $(VERSION); then \
+		echo; \
+		echo "Build failed: Can't determine VERSION (Package Version)."; \
+		exit 1; \
+	fi;
+	@if test -z $(RPMARCH); then \
+		echo; \
+		echo "Build failed: Can't determine RPMARCH (RPM architecture)."; \
+		exit 1; \
+	fi;
+	@echo "BUILD PACKAGE: $(PKGNAME)-$(VERSION) ($(RPMARCH))"
+
+prep2: prep1
+	@echo
+	@echo "Setting up build environment..."
+	@-rm -rf $(WORKDIR) 2>/dev/null || true
+	@mkdir -p $(WORKDIR)/rpm/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
+	@# extract HEAD from local repo, output as a tar with a prefix directory of
+	@# PKGNAME-VERSION (e.g. yumbootstrap-0.0.03) then gzip archive and save into
+	@# rpm-build/rpm/SOURCES directory.
+	git archive --format=tar --prefix=$(PKGNAME)-$(VERSION)/ HEAD | gzip -9 > $(WORKDIR)/rpm/SOURCES/$(PKGNAME)-$(VERSION).tar.gz
+	@sleep 1
+	@echo "Done."
+
+srpm: prep
+	@echo
+	@echo "Building source rpm..."
+	rpmbuild --define="%_usrsrc $$PWD/$(WORKDIR)" --define="%_topdir %{_usrsrc}/rpm" -bs redhat/*.spec
+	cp rpm-build/rpm/SRPMS/$(PKGNAME)-*.src.rpm $$PWD
+	@sleep 1
+	@echo "Done."
+
+rpm: prep srpm
+	@echo
+	@echo "Building rpm..."
+	rpmbuild --rebuild --define="%_usrsrc $$PWD/$(WORKDIR)" --define="%_topdir %{_usrsrc}/rpm" yumbootstrap-*.src.rpm
+	cp rpm-build/rpm/RPMS/noarch/$(PKGNAME)-*.rpm $$PWD
+	@sleep 1
+	@echo "Done."
+
+mostlyclean: prep1
+	@echo
+	@echo "Cleaning up work files..."
 	python setup.py clean --all
-	rm -rf dist lib/*.egg-info
-#	rm -rf $(SPHINX_DOCTREE) $(SPHINX_OUTPUT)
+	-rm -rf dist lib/*.egg-info 2>/dev/null || true
+	-rm -rf $(WORKDIR) 2>/dev/null || true
 
-#SPHINX_DOCTREE = doc/doctrees
-#SPHINX_SOURCE = doc
-#SPHINX_OUTPUT = doc/html
+clean-rpm: prep1
+	@echo
+	@echo -n "Removing rpms... "
+	@-rm $(WORKDIR)/rpm/RPMS/noarch/*.rpm 2>/dev/null || true
+	@-rm $(PWD)/*.rpm 2>/dev/null || true
+	@sleep 1
+	@echo "Done."
 
-#.PHONY: doc html
-#doc: html
+clean-srpm: prep1
+	@echo
+	@echo -n "Removing srpms... "
+	@-rm $(WORKDIR)/rpm/SRPMS/*.srpm 2>/dev/null || true
+	@-rm $(PWD)/*.srpm 2>/dev/null || true
+	@sleep 1
+	@echo "Done."
 
-#html:
-#	sphinx-build -b html -d $(SPHINX_DOCTREE) $(SPHINX_SOURCE) $(SPHINX_OUTPUT)
+clean: clean-rpm clean-srpm mostlyclean
+	@echo
+	@echo "All clean."
+	@echo
 
-srpm: VERSION=$(shell awk '$$1 == "%define" && $$2 == "_version" {print $$3}' redhat/*.spec)
-srpm: PKGNAME=$(shell awk '$$1 ~ /^[Nn][Aa][Mm][Ee]:/ {print $$2}' redhat/*.spec)
-srpm:
-	rm -rf rpm-build
-	mkdir -p rpm-build/rpm
-	cd rpm-build/rpm && mkdir BUILD RPMS SOURCES SPECS SRPMS
-	git archive --format=tar --prefix=$(PKGNAME)-$(VERSION)/ HEAD | gzip -9 > rpm-build/rpm/SOURCES/$(PKGNAME)-$(VERSION).tar.gz
-	rpmbuild --define="%_usrsrc $$PWD/rpm-build" --define="%_topdir %{_usrsrc}/rpm" -bs redhat/*.spec
-	mv rpm-build/rpm/SRPMS/$(PKGNAME)-*.src.rpm .
-	rm -r rpm-build
+done-build:
+	@echo
+	@echo "Done building."
+	@echo
