@@ -11,6 +11,7 @@ all: srpm rpm done-build
 
 .PHONY: all default tarball egg prep prep1 prep2 srpm rpm \
 	install install-notmodule \
+	uninstall uninstall-notmodule \
 	mostlyclean clean-rpm clean-srpm clean done-build
 
 default: tarball
@@ -80,13 +81,49 @@ install: prep1
 		exit 1; \
 	fi;
 	@echo
-	@echo "Installing yumbootstrap..."
+	@echo "Installing $(PKGNAME)-$(VERSION)..."
 	yum localinstall --nogpgcheck $(WORKDIR)/RPMS/$(RPMARCH)/$(PKGNAME)-$(VERSION)-*.$(RPMARCH).rpm
 
 install-notmodule: prep1
+	@if test $(RUNUSER) != "root"; then \
+		echo; \
+		echo "Install (notmodule) failed: You must be root user to install."; \
+		exit 1; \
+	fi;
+	@echo
+	@echo "Installing (notmodule) $(PKGNAME)-$(VERSION)..."
 	install -D -m 755 bin/yumbootstrap $(DESTDIR)$(BINDIR)/yumbootstrap
 	install -d -m 755 $(DESTDIR)$(SYSCONFDIR)/yumbootstrap/suites
 	cp -R distros/* $(DESTDIR)$(SYSCONFDIR)/yumbootstrap/suites
+	@echo "Done."
+
+uninstall: prep1
+	@if [[ ! "$(shell rpm -q $(PKGNAME)-$(VERSION) 2>/dev/null)" =~ ^($(PKGNAME)-$(VERSION)) ]]; then \
+		echo; \
+		echo "Uninstall failed: $(PKGNAME)-$(VERSION) RPM not installed."; \
+		exit 1; \
+	fi;
+	@if [ $(RUNUSER) != "root" ]; then \
+		echo; \
+		echo "Uninstall failed: You must be root user to uninstall."; \
+		exit 1; \
+	fi;
+	@echo
+	@echo "Uninstalling $(PKGNAME)-$(VERSION)..."
+	yum erase $(PKGNAME)-$(VERSION)
+	@echo "Done."
+
+uninstall-notmodule: prep1
+	@if [ $(RUNUSER) != "root" ]; then \
+		echo; \
+		echo "Uninstall (notmodule) failed: You must be root user to uninstall."; \
+		exit 1; \
+	fi;
+	@echo
+	@echo "Uninstalling (notmodule) $(PKGNAME)-$(VERSION)..."
+	-rm $(DESTDIR)$(BINDIR)/yumbootstrap
+	-rm -rf $(DESTDIR)$(SYSCONFDIR)/yumbootstrap
+	@echo "Done."
 
 mostlyclean: prep1
 	@echo
