@@ -50,26 +50,26 @@ prep2: prep1
 	@echo
 	@echo "Setting up build environment..."
 	@-rm -rf $(WORKDIR) 2>/dev/null || true
-	@mkdir -p $(WORKDIR)/rpm/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
-	git archive --format=tar --prefix=$(PKGNAME)-$(VERSION)/ HEAD | gzip -9 > $(WORKDIR)/rpm/SOURCES/$(PKGNAME)-$(VERSION).tar.gz
+	@mkdir -p $(WORKDIR)/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
+	git archive --format=tar --prefix=$(PKGNAME)-$(VERSION)/ HEAD | gzip -9 > $(WORKDIR)/SOURCES/$(PKGNAME)-$(VERSION).tar.gz
 	@echo "Done."
 
 srpm: prep
 	@echo
 	@echo "Building source rpm..."
-	rpmbuild --define="%_usrsrc $$PWD/$(WORKDIR)" --define="%_topdir %{_usrsrc}/rpm" -bs redhat/*.spec
-	cp rpm-build/rpm/SRPMS/$(PKGNAME)-$(VERSION)-*.src.rpm $$PWD
+	rpmbuild --define="%_usrsrc $$PWD/$(WORKDIR)" --define="%_topdir %{_usrsrc}" -bs redhat/*.spec
+	cp $(WORKDIR)/SRPMS/$(PKGNAME)-$(VERSION)-*.src.rpm $$PWD
 	@echo "Done."
 
 rpm: prep srpm
 	@echo
 	@echo "Building rpm..."
-	rpmbuild --rebuild --define="%_usrsrc $$PWD/$(WORKDIR)" --define="%_topdir %{_usrsrc}/rpm" yumbootstrap-*.src.rpm
-	cp rpm-build/rpm/RPMS/noarch/$(PKGNAME)-$(VERSION)-*.$(RPMARCH).rpm $$PWD
+	rpmbuild --rebuild --define="%_usrsrc $$PWD/$(WORKDIR)" --define="%_topdir %{_usrsrc}" yumbootstrap-*.src.rpm
+	cp $(WORKDIR)/RPMS/noarch/$(PKGNAME)-$(VERSION)-*.$(RPMARCH).rpm $$PWD
 	@echo "Done."
 
 install: prep1
-	@if [ ! -f $(WORKDIR)/rpm/RPMS/noarch/$(PKGNAME)-$(VERSION)-*.$(RPMARCH).rpm ]; then \
+	@if [ ! -f $(WORKDIR)/RPMS/noarch/$(PKGNAME)-$(VERSION)-*.$(RPMARCH).rpm ]; then \
 		echo; \
 		echo "Install failed: Run \"make rpm\" first."; \
 		exit 1; \
@@ -81,7 +81,7 @@ install: prep1
 	fi;
 	@echo
 	@echo "Installing yumbootstrap..."
-	yum localinstall --nogpgcheck rpm-build/rpm/RPMS/noarch/$(PKGNAME)-$(VERSION)-*.$(RPMARCH).rpm
+	yum localinstall --nogpgcheck $(WORKDIR)/RPMS/noarch/$(PKGNAME)-$(VERSION)-*.$(RPMARCH).rpm
 
 install-notmodule: prep1
 	install -D -m 755 bin/yumbootstrap $(DESTDIR)$(BINDIR)/yumbootstrap
@@ -98,7 +98,7 @@ mostlyclean: prep1
 clean-rpm: prep1
 	@echo
 	@echo -n "Removing rpms... "
-	@-rm $(WORKDIR)/rpm/RPMS/noarch/*.rpm 2>/dev/null || true
+	@-rm $(WORKDIR)/RPMS/noarch/*.rpm 2>/dev/null || true
 	@-rm $(PWD)/*.rpm 2>/dev/null || true
 	@echo "Done."
 
