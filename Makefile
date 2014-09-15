@@ -51,11 +51,7 @@ prep2: prep1
 	@echo "Setting up build environment..."
 	@-rm -rf $(WORKDIR) 2>/dev/null || true
 	@mkdir -p $(WORKDIR)/rpm/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
-	@# extract HEAD from local repo, output as a tar with a prefix directory of
-	@# PKGNAME-VERSION (e.g. yumbootstrap-0.0.03) then gzip archive and save into
-	@# rpm-build/rpm/SOURCES directory.
 	git archive --format=tar --prefix=$(PKGNAME)-$(VERSION)/ HEAD | gzip -9 > $(WORKDIR)/rpm/SOURCES/$(PKGNAME)-$(VERSION).tar.gz
-	@sleep 1
 	@echo "Done."
 
 srpm: prep
@@ -63,7 +59,6 @@ srpm: prep
 	@echo "Building source rpm..."
 	rpmbuild --define="%_usrsrc $$PWD/$(WORKDIR)" --define="%_topdir %{_usrsrc}/rpm" -bs redhat/*.spec
 	cp rpm-build/rpm/SRPMS/$(PKGNAME)-$(VERSION)-*.src.rpm $$PWD
-	@sleep 1
 	@echo "Done."
 
 rpm: prep srpm
@@ -71,7 +66,6 @@ rpm: prep srpm
 	@echo "Building rpm..."
 	rpmbuild --rebuild --define="%_usrsrc $$PWD/$(WORKDIR)" --define="%_topdir %{_usrsrc}/rpm" yumbootstrap-*.src.rpm
 	cp rpm-build/rpm/RPMS/noarch/$(PKGNAME)-$(VERSION)-*.$(RPMARCH).rpm $$PWD
-	@sleep 1
 	@echo "Done."
 
 install: prep1
@@ -106,7 +100,6 @@ clean-rpm: prep1
 	@echo -n "Removing rpms... "
 	@-rm $(WORKDIR)/rpm/RPMS/noarch/*.rpm 2>/dev/null || true
 	@-rm $(PWD)/*.rpm 2>/dev/null || true
-	@sleep 1
 	@echo "Done."
 
 clean-srpm: prep1
@@ -114,7 +107,6 @@ clean-srpm: prep1
 	@echo -n "Removing srpms... "
 	@-rm $(WORKDIR)/rpm/SRPMS/*.srpm 2>/dev/null || true
 	@-rm $(PWD)/*.srpm 2>/dev/null || true
-	@sleep 1
 	@echo "Done."
 
 clean: clean-rpm clean-srpm mostlyclean
