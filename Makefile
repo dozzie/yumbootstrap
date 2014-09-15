@@ -9,18 +9,11 @@ SYSCONFDIR = $(PREFIX)/etc
 
 all: srpm rpm done-build
 
-.PHONY: all default install-notmodule tarball egg prep prep1 prep2 srpm rpm \
+.PHONY: all default tarball egg prep prep1 prep2 srpm rpm \
+	install install-notmodule \
 	mostlyclean clean-rpm clean-srpm clean done-build
 
 default: tarball
-
-install:
-	# @TODO
-
-install-notmodule:
-	install -D -m 755 bin/yumbootstrap $(DESTDIR)$(BINDIR)/yumbootstrap
-	install -d -m 755 $(DESTDIR)$(SYSCONFDIR)/yumbootstrap/suites
-	cp -R distros/* $(DESTDIR)$(SYSCONFDIR)/yumbootstrap/suites
 
 tarball:
 	python setup.py sdist --formats=zip
@@ -35,6 +28,7 @@ prep1:
 	$(eval PKGNAME := $(shell awk 'tolower($$1) ~ /^name:/ {print $$2}' redhat/*.spec))
 	$(eval RPMARCH := $(shell awk 'tolower($$1) ~ /^buildarch:/ {print $$2}' redhat/*.spec))
 	$(eval WORKDIR := rpm-build)
+	$(eval RUNUSER := $(shell whoami))
 	@if test -z $(PKGNAME); then \
 		echo; \
 		echo "Build failed: Can't determine PKGNAME (Package Name)."; \
@@ -68,7 +62,7 @@ srpm: prep
 	@echo
 	@echo "Building source rpm..."
 	rpmbuild --define="%_usrsrc $$PWD/$(WORKDIR)" --define="%_topdir %{_usrsrc}/rpm" -bs redhat/*.spec
-	cp rpm-build/rpm/SRPMS/$(PKGNAME)-*.src.rpm $$PWD
+	cp rpm-build/rpm/SRPMS/$(PKGNAME)-$(VERSION)-*.src.rpm $$PWD
 	@sleep 1
 	@echo "Done."
 
@@ -76,9 +70,29 @@ rpm: prep srpm
 	@echo
 	@echo "Building rpm..."
 	rpmbuild --rebuild --define="%_usrsrc $$PWD/$(WORKDIR)" --define="%_topdir %{_usrsrc}/rpm" yumbootstrap-*.src.rpm
-	cp rpm-build/rpm/RPMS/noarch/$(PKGNAME)-*.rpm $$PWD
+	cp rpm-build/rpm/RPMS/noarch/$(PKGNAME)-$(VERSION)-*.$(RPMARCH).rpm $$PWD
 	@sleep 1
 	@echo "Done."
+
+install: prep1
+	@if [ ! -f $(WORKDIR)/rpm/RPMS/noarch/$(PKGNAME)-$(VERSION)-*.$(RPMARCH).rpm ]; then \
+		echo; \
+		echo "Install failed: Run \"make rpm\" first."; \
+		exit 1; \
+	fi;
+	@if test $(RUNUSER) != "root"; then \
+		echo; \
+		echo "Install failed: You must be root user to install."; \
+		exit 1; \
+	fi;
+	@echo
+	@echo "Installing yumbootstrap..."
+	yum localinstall --nogpgcheck rpm-build/rpm/RPMS/noarch/$(PKGNAME)-$(VERSION)-*.$(RPMARCH).rpm
+
+install-notmodule: prep1
+	install -D -m 755 bin/yumbootstrap $(DESTDIR)$(BINDIR)/yumbootstrap
+	install -d -m 755 $(DESTDIR)$(SYSCONFDIR)/yumbootstrap/suites
+	cp -R distros/* $(DESTDIR)$(SYSCONFDIR)/yumbootstrap/suites
 
 mostlyclean: prep1
 	@echo
