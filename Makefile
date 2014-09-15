@@ -65,11 +65,11 @@ rpm: prep srpm
 	@echo
 	@echo "Building rpm..."
 	rpmbuild --rebuild --define="%_usrsrc $$PWD/$(WORKDIR)" --define="%_topdir %{_usrsrc}" yumbootstrap-*.src.rpm
-	cp $(WORKDIR)/RPMS/noarch/$(PKGNAME)-$(VERSION)-*.$(RPMARCH).rpm $$PWD
+	cp $(WORKDIR)/RPMS/$(RPMARCH)/$(PKGNAME)-$(VERSION)-*.$(RPMARCH).rpm $$PWD
 	@echo "Done."
 
 install: prep1
-	@if [ ! -f $(WORKDIR)/RPMS/noarch/$(PKGNAME)-$(VERSION)-*.$(RPMARCH).rpm ]; then \
+	@if [ ! -f $(WORKDIR)/RPMS/$(RPMARCH)/$(PKGNAME)-$(VERSION)-*.$(RPMARCH).rpm ]; then \
 		echo; \
 		echo "Install failed: Run \"make rpm\" first."; \
 		exit 1; \
@@ -81,7 +81,7 @@ install: prep1
 	fi;
 	@echo
 	@echo "Installing yumbootstrap..."
-	yum localinstall --nogpgcheck $(WORKDIR)/RPMS/noarch/$(PKGNAME)-$(VERSION)-*.$(RPMARCH).rpm
+	yum localinstall --nogpgcheck $(WORKDIR)/RPMS/$(RPMARCH)/$(PKGNAME)-$(VERSION)-*.$(RPMARCH).rpm
 
 install-notmodule: prep1
 	install -D -m 755 bin/yumbootstrap $(DESTDIR)$(BINDIR)/yumbootstrap
@@ -98,15 +98,15 @@ mostlyclean: prep1
 clean-rpm: prep1
 	@echo
 	@echo -n "Removing rpms... "
-	@-rm $(WORKDIR)/RPMS/noarch/*.rpm 2>/dev/null || true
-	@-rm $(PWD)/*.rpm 2>/dev/null || true
+	@-rm $(WORKDIR)/RPMS/$(RPMARCH)/*.$(RPMARCH).rpm 2>/dev/null || true
+	@-rm $(PWD)/*.$(RPMARCH).rpm 2>/dev/null || true
 	@echo "Done."
 
 clean-srpm: prep1
 	@echo
 	@echo -n "Removing srpms... "
-	@-rm $(WORKDIR)/rpm/SRPMS/*.srpm 2>/dev/null || true
-	@-rm $(PWD)/*.srpm 2>/dev/null || true
+	@-rm $(WORKDIR)/SRPMS/*.src.rpm 2>/dev/null || true
+	@-rm $(PWD)/*.src.rpm 2>/dev/null || true
 	@echo "Done."
 
 clean: clean-rpm clean-srpm mostlyclean
