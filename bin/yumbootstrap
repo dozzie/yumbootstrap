@@ -36,11 +36,11 @@ o = optparse.OptionParser(
 #-----------------------------------------------------------
 
 expected_nargs = {
-  'install':      [2],
-  'yum.conf':     [2],
-  'list_suites':  [0],
-  'list_scripts': [1],
-  'scripts':      xrange(1, 0xFFFFFFFF), # enough for any number of args
+  'install':      (lambda n: n == 2),
+  'yum.conf':     (lambda n: n == 2),
+  'list_suites':  (lambda n: n == 0),
+  'list_scripts': (lambda n: n == 1),
+  'scripts':      (lambda n: n > 1),
   #'download':     [?],
   #'second_stage': [?],
   #'tarball':      [?],
@@ -201,7 +201,7 @@ o.add_option(
 
 opts, args = o.parse_args()
 
-if len(args) not in expected_nargs[opts.action]:
+if not expected_nargs[opts.action](len(args)):
   o.error("wrong number of arguments")
 
 if opts.verbose:
