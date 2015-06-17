@@ -1,0 +1,22 @@
+name = Fedora
+release = 22
+
+gpg_key =  gpg/RPM-GPG-KEY-fedora-22-primary
+gpg_key =  gpg/RPM-GPG-KEY-fedora-22-secondary
+
+packages = packages/${suite}.list
+
+[post_install]
+finalize = scripts/fix_rpmdb.py
+finalize = scripts/clean_yumbootstrap.py
+
+[repositories]
+fedora         = http://download.fedoraproject.org/pub/fedora/linux/releases/22/Everything/$basearch/os/
+fedora-updates = http://download.fedoraproject.org/pub/fedora/linux/updates/22/$basearch/
+
+[environment]
+#PYTHONPATH=...
+#PYTHONPATH
+#SUDO_*
+
+# vim:ft=dosini
