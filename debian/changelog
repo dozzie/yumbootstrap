@@ -1,3 +1,9 @@
+yumbootstrap (0.0.3-2) stable; urgency=low
+
+  * Dispensed with CDBS for package.
+
+ -- Stanislaw Klekot <dozzie@jarowit.net>  Mon, 11 Jan 2016 19:35:14 +0200
+
 yumbootstrap (0.0.3-1) stable; urgency=low
 
   * Fixed installing RH6.4 under Fedora.

@@ -1,17 +1,11 @@
 #!/usr/bin/make -f
 
-# NOTE: this goes before including python-* CDBS stuff
-DEB_PYTHON_SYSTEM = pysupport
+%:
+	dh $@
 
-include /usr/share/cdbs/1/rules/debhelper.mk
-include /usr/share/cdbs/1/class/python-distutils.mk
+override_dh_auto_build:
+	python setup.py build
 
-DEB_DESTDIR = $(CURDIR)/debian/tmp
-
-install/yumbootstrap::
-	make install-notmodule DESTDIR=$(DEB_DESTDIR) BINDIR=/usr/sbin SYSCONFDIR=/etc
-
-# no targets are necessary with CDBS here, but if required, use following:
-#   clean  -- `dpkg-buildpackage -b/-S' calls it to clean the sources
-#   build  -- should call `make' and that's all about it
-#   binary -- should install stuff to $(CURDIR)/debian/tmp and call dh_*
+override_dh_auto_install:
+	make install-notmodule DESTDIR=$(CURDIR)/debian/tmp BINDIR=/usr/sbin SYSCONFDIR=/etc
+	python setup.py install --root=$(CURDIR)/debian/tmp --prefix=/usr --exec-prefix=/usr

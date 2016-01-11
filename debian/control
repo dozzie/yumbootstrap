@@ -2,7 +2,8 @@ Source: yumbootstrap
 Maintainer: Stanislaw Klekot <dozzie@jarowit.net>
 Section: admin
 Priority: extra
-Build-Depends: debhelper (>> 7.0.0), cdbs, make, python, python-support
+Build-Depends: debhelper (>> 7.0.0), make, python, python-support,
+ python-setuptools
 # the version is just a wild guess
 X-Python-Version: >= 2.3
 
