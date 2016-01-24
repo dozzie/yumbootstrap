@@ -1,0 +1,30 @@
+# subset from @Core
+coreutils
+bash
+grep
+gawk
+basesystem
+rpm
+initscripts
+iproute
+
+# subset from @Base
+less
+make
+mktemp
+vim-minimal
+yum
+#authconfig
+#dhclient
+chkconfig
+# graphical boot helper (used by initscripts)
+plymouth
+# ~root/.*
+rootfiles
+
+# redhat-release
+sl-release
+
+# required to fix RPM DB
+/usr/bin/db_load
+
