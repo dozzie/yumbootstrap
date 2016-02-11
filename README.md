@@ -49,9 +49,9 @@ Installing *centos-6* suite, installing custom packages by hand from parent OS:
 Installing yumbootstrap
 -----------------------
 
-For Debian-based distributions, *dpkg-dev* and *fakeroot* are required.
-Additionally the following packages are required on a minimal Debian (jessie) Image:
-*debhelper (>> 7.0.0)*, *python*, *python-support*, *python-setuptools*, *yum*
+For Debian-based distributions, *dpkg-dev*, *fakeroot*, *debhelper* (7+),
+*python*, *python-setuptools*, *python-support*, and (obviously) *yum* are
+required.
 
     dpkg-buildpackage -b -uc
     dpkg -i ../yumbootstrap*.deb
