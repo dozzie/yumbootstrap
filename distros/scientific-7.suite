@@ -1,8 +1,8 @@
 name = Scientifc Linux
 release = 7
 
-gpg_key =  gpg/RPM-GPG-KEY-sl7
-gpg_key ?= gpg/RPM-GPG-KEY-sl
+gpg_key =  gpg/RPM-GPG-KEY-ScientificLinux-7
+gpg_key ?= gpg/RPM-GPG-KEY-ScientificLinux
 
 packages = packages/${suite}.list
 
@@ -11,10 +11,8 @@ finalize = scripts/fix_rpmdb.py
 finalize = scripts/clean_yumbootstrap.py
 
 [repositories]
-scientific         = 
-http://ftp.halifax.rwth-aachen.de/scientificlinux/7x/$basearch/os/
-scientific-updates = 
-http://ftp.halifax.rwth-aachen.de/scientificlinux/7x/$basearch/os/
+scientific         = http://ftp.halifax.rwth-aachen.de/scientificlinux/7x/$basearch/os/
+scientific-updates = http://ftp.halifax.rwth-aachen.de/scientificlinux/7x/$basearch/os/
 
 [environment]
 #PYTHONPATH=...
@@ -22,4 +20,3 @@ http://ftp.halifax.rwth-aachen.de/scientificlinux/7x/$basearch/os/
 #SUDO_*
 
 # vim:ft=dosini
-
