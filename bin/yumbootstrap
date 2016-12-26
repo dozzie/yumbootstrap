@@ -260,9 +260,11 @@ def run_post_install_scripts(suite, skip = [], just = []):
       logger.info("skipping %s", script_name)
       continue
     logger.info("running %s", script_name)
-    os.environ['SCRIPT_NAME'] = script_name
-    os.environ['SCRIPT_PATH'] = script[0]
-    sh.run(script, env = suite.environment)
+    script_env = os.environ.copy()
+    script_env['SCRIPT_NAME'] = script_name
+    script_env['SCRIPT_PATH'] = script[0]
+    script_env.update(suite.environment)
+    sh.run(script, env = script_env)
 
 #-----------------------------------------------------------
 
