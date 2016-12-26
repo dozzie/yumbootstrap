@@ -58,6 +58,5 @@ required.
 
 For Red Hat derivatives you need *rpm-build*.
 
-    make srpm
-    rpmbuild --rebuild yumbootstrap-*.src.rpm
-    yum localinstall --nogpgcheck /usr/src/redhat/RPMS/*/yumbootstrap-*.rpm
+    make rpm
+    sudo make install
