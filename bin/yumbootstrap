@@ -277,7 +277,7 @@ def set_scripts_environment(opts, target):
 #-----------------------------------------------------------
 
 def do_install(opts, suite_name, target):
-  from yumbootstrap.fs import touch
+  from yumbootstrap.fs import touch, mkdir, mkchardev
 
   set_scripts_environment(opts, target)
   suite = yumbootstrap.suites.load_suite(opts.suite_dir, suite_name)
@@ -290,6 +290,13 @@ def do_install(opts, suite_name, target):
   # prepare target directory with an empty /etc/fstab
   touch(target, 'etc/fstab', text = '# empty fstab')
   touch(target, 'etc/mtab')
+  mkdir(target, "dev/pts")
+  mkchardev(target, "dev/null",    mode = 0666, major = 1, minor = 3)
+  mkchardev(target, "dev/zero",    mode = 0666, major = 1, minor = 5)
+  mkchardev(target, "dev/full",    mode = 0666, major = 1, minor = 7)
+  mkchardev(target, "dev/random",  mode = 0666, major = 1, minor = 8)
+  mkchardev(target, "dev/urandom", mode = 0666, major = 1, minor = 9)
+  mkchardev(target, "dev/tty",     mode = 0666, major = 5, minor = 0)
 
   if len(opts.repositories) > 0:
     logger.info("using custom repositories: %s",
