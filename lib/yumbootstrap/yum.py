@@ -3,6 +3,8 @@
 import rpm as rpm_mod
 import os
 import shutil
+import sys
+import importlib
 
 import bdb
 import sh
@@ -50,10 +52,6 @@ class YumConfig:
   def root_dir(self):
     return os.path.join(self.chroot, 'yumbootstrap')
 
-  @property
-  def lock_file(self):
-    return os.path.join(self.chroot, 'yumbootstrap', 'yum.pid')
-
   def text(self):
     if self.pretend_has_keys or os.path.exists(self.gpg_keys):
       logger.info("GPG keys defined, adding them to repository configs")
@@ -91,6 +89,26 @@ class YumConfig:
 
 #-----------------------------------------------------------------------------
 
+
+from contextlib import contextmanager
+
+
+@contextmanager
+def environ(env):
+    """Temporarily set environment variables inside the context manager and
+    fully restore previous environment afterwards
+    """
+    original_env = {key: os.getenv(key) for key in env}
+    os.environ.update(env)
+    try:
+        yield
+    finally:
+        for key, value in original_env.items():
+            if value is None:
+                del os.environ[key]
+            else:
+                os.environ[key] = value
+
 # TODO:
 #   * setarch
 #   * should `chroot' go through YumConfig?
@@ -105,17 +123,29 @@ class Yum:
     self.yum = yum # yum from host OS
     self.interactive = interactive
     self.rpmdb_fixed = False
+    self.yum_lock_file = '/yumbootstrap/yum.pid'
     # NOTE: writing yum.conf is delayed to the first operation
 
   def run_yum(self, args, env=None):
-    # Monkey patch yum pid file location as that causes problems with
-    # /var/run supposed to being a symlink to /run instead of a folder.
-    print('monkey patching yum lock file to: %s' % self.yum_conf.lock_file)
-    import yum.constants
-    yum.constants.YUM_PID_FILE = self.yum_conf.lock_file
+    # Yum pid file (aka lock) is hardcoded to /var/run/yum.pid.
+    # This causes problems on newer distros where /var/run is supposed
+    # to be a symlink to /run instead of a folder.
+    # So here we monkey patch our way out of this mess.
+    logger.info('monkey patching yum lock file to: %s' % self.yum_lock_file)
+    importlib.import_module('yum')
+    importlib.import_module('yum.constants')
+    _yum = sys.modules['yum']
+    _yum_constants = sys.modules['yum.constants']
+    sys.modules['yum.constants'].YUM_PID_FILE = \
+      sys.modules['yum'].YUM_PID_FILE = self.yum_lock_file
+    reload(sys.modules['yum'])
+
     sys.path.insert(0, '/usr/share/yum-cli')
-    import yummain
-    yummain.user_main(args, exit_code=True)
+    if not env:
+        env = {}
+    with environ(env):
+        import yummain
+        yummain.user_main(args, exit_code=False)
 
   def _yum_call(self):
     yum_conf = self.yum_conf.config_file
@@ -124,7 +154,6 @@ class Yum:
       logger.info("%s doesn't exist, creating one", yum_conf)
       fs.touch(yum_conf, text = self.yum_conf.text())
 
-    #opts = [self.yum, '-c', yum_conf, '--installroot', self.chroot, '-y']
     opts = ['-c', yum_conf, '--installroot', self.chroot, '-y']
 
     if self.interactive:
@@ -140,10 +169,6 @@ class Yum:
 
     exclude_opts = ["--exclude=" + pkg for pkg in exclude]
 
-    #sh.run(
-    #  self._yum_call() + exclude_opts + ['install'] + mklist(packages),
-    #  env = self.yum_conf.env,
-    #)
     self.run_yum(
       self._yum_call() + exclude_opts + ['install'] + mklist(packages),
       env = self.yum_conf.env,
@@ -155,7 +180,6 @@ class Yum:
 
     exclude_opts = ["--exclude=" + pkg for pkg in exclude]
 
-    #sh.run(
     self.run_yum(
       self._yum_call() + exclude_opts + ['groupinstall'] + mklist(groups),
       env = self.yum_conf.env,
