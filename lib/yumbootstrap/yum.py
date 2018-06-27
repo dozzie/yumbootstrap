@@ -50,6 +50,10 @@ class YumConfig:
   def root_dir(self):
     return os.path.join(self.chroot, 'yumbootstrap')
 
+  @property
+  def lock_file(self):
+    return os.path.join(self.chroot, 'yumbootstrap', 'yum.pid')
+
   def text(self):
     if self.pretend_has_keys or os.path.exists(self.gpg_keys):
       logger.info("GPG keys defined, adding them to repository configs")
@@ -103,6 +107,16 @@ class Yum:
     self.rpmdb_fixed = False
     # NOTE: writing yum.conf is delayed to the first operation
 
+  def run_yum(self, args, env=None):
+    # Monkey patch yum pid file location as that causes problems with
+    # /var/run supposed to being a symlink to /run instead of a folder.
+    print('monkey patching yum lock file to: %s' % self.yum_conf.lock_file)
+    import yum.constants
+    yum.constants.YUM_PID_FILE = self.yum_conf.lock_file
+    sys.path.insert(0, '/usr/share/yum-cli')
+    import yummain
+    yummain.user_main(args, exit_code=True)
+
   def _yum_call(self):
     yum_conf = self.yum_conf.config_file
 
@@ -110,7 +124,8 @@ class Yum:
       logger.info("%s doesn't exist, creating one", yum_conf)
       fs.touch(yum_conf, text = self.yum_conf.text())
 
-    opts = [self.yum, '-c', yum_conf, '--installroot', self.chroot, '-y']
+    #opts = [self.yum, '-c', yum_conf, '--installroot', self.chroot, '-y']
+    opts = ['-c', yum_conf, '--installroot', self.chroot, '-y']
 
     if self.interactive:
       opts.extend(['-e', '1', '-d', '2'])
@@ -125,7 +140,11 @@ class Yum:
 
     exclude_opts = ["--exclude=" + pkg for pkg in exclude]
 
-    sh.run(
+    #sh.run(
+    #  self._yum_call() + exclude_opts + ['install'] + mklist(packages),
+    #  env = self.yum_conf.env,
+    #)
+    self.run_yum(
       self._yum_call() + exclude_opts + ['install'] + mklist(packages),
       env = self.yum_conf.env,
     )
@@ -136,7 +155,8 @@ class Yum:
 
     exclude_opts = ["--exclude=" + pkg for pkg in exclude]
 
-    sh.run(
+    #sh.run(
+    self.run_yum(
       self._yum_call() + exclude_opts + ['groupinstall'] + mklist(groups),
       env = self.yum_conf.env,
     )
