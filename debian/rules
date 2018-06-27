@@ -1,11 +1,14 @@
 #!/usr/bin/make -f
 
-%:
-	dh $@
+include /usr/share/dpkg/pkg-info.mk
 
-override_dh_auto_build:
-	python setup.py build
+PYTHON2_VERSIONS = $(shell pyversions -r)
+
+export PYBUILD_NAME = yumbootstrap
+
+%:
+	dh $@ --with python2 --buildsystem=pybuild
 
 override_dh_auto_install:
-	make install-notmodule DESTDIR=$(CURDIR)/debian/tmp BINDIR=/usr/sbin SYSCONFDIR=/etc
-	python setup.py install --root=$(CURDIR)/debian/tmp --prefix=/usr --exec-prefix=/usr
+	make install-notmodule DESTDIR=$(CURDIR)/debian/$(DEB_SOURCE) BINDIR=/usr/sbin SYSCONFDIR=/etc
+	dh_auto_install
