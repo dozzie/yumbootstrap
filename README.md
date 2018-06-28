@@ -49,8 +49,8 @@ Installing *centos-6* suite, installing custom packages by hand from parent OS:
 Installing yumbootstrap
 -----------------------
 
-For Debian-based distributions, *dpkg-dev*, *fakeroot*, *debhelper* (7+),
-*python*, *python-setuptools*, *python-support*, and (obviously) *yum* are
+For Debian-based distributions, *dpkg-dev*, *fakeroot*, *debhelper* (9+),
+*python*, and *python-setuptools*. For installing the package, *yum* is also
 required.
 
     dpkg-buildpackage -b -uc
@@ -61,3 +61,12 @@ For Red Hat derivatives you need *rpm-build*.
     make srpm
     rpmbuild --rebuild yumbootstrap-*.src.rpm
     yum localinstall --nogpgcheck /usr/src/redhat/RPMS/*/yumbootstrap-*.rpm
+
+Contact and License
+-------------------
+
+yumbootstrap is written by Stanislaw Klekot <dozzie at jarowit.net>.
+The primary distribution point is <http://dozzie.jarowit.net/>.
+
+yumbootstrap is distributed under GNU GPL v3 license. See LICENSE file for
+details.
