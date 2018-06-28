@@ -1,3 +1,10 @@
+yumbootstrap (0.0.3-3) stable; urgency=low
+
+  * Fixed install procedure for new Debians.
+  * Removed python-support from build-time dependencies.
+
+ -- Stanislaw Klekot <dozzie@jarowit.net>  Thu, 28 Jun 2018 22:17:01 +0200
+
 yumbootstrap (0.0.3-2) stable; urgency=low
 
   * Dispensed with CDBS for package.
