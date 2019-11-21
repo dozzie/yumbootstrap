@@ -1,0 +1,19 @@
+name = CentOS
+release = 8
+
+gpg_key =  gpg/RPM-GPG-KEY-CentOS-8
+
+packages = packages/${suite}.list
+
+[post_install]
+finalize = scripts/clean_yumbootstrap.py
+
+[repositories]
+centos         = http://mirror.centos.org/centos/8/BaseOS/$basearch/os/
+
+[environment]
+#PYTHONPATH=...
+#PYTHONPATH
+#SUDO_*
+
+# vim:ft=dosini
