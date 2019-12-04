@@ -1,11 +1,11 @@
 #!/usr/bin/make -f
 
 %:
-	dh $@ --with=python2
+	dh $@ --with=python3
 
 override_dh_auto_build:
-	python setup.py build
+	python3 setup.py build
 
 override_dh_auto_install:
 	make install-notmodule DESTDIR=$(CURDIR)/debian/tmp BINDIR=/usr/sbin SYSCONFDIR=/etc
-	python setup.py install --root=$(CURDIR)/debian/tmp --install-layout=deb --no-compile
+	python3 setup.py install --root=$(CURDIR)/debian/tmp --install-layout=deb --no-compile

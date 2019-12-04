@@ -1,12 +1,12 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import rpm as rpm_mod
 import os
 import shutil
 
-import bdb
-import sh
-import fs
+import yumbootstrap.bdb as bdb
+import yumbootstrap.sh as sh
+import yumbootstrap.fs as fs
 
 import logging
 logger = logging.getLogger("yum")
@@ -146,12 +146,12 @@ class Yum:
     shutil.rmtree(self.yum_conf.root_dir, ignore_errors = True)
 
   def fix_rpmdb(self, expected_rpmdb_dir = None,
-                db_load = 'db_load', rpm = 'rpm'):
+                python = 'python', db_load = 'db_load', rpm = 'rpm'):
     logger.info("fixing RPM database for guest")
     current_rpmdb_dir = rpm_mod.expandMacro('%{_dbpath}')
     if expected_rpmdb_dir is None:
       expected_rpmdb_dir = sh.run(
-        ['python', '-c', 'import rpm; print rpm.expandMacro("%{_dbpath}")'],
+        [python, '-c', 'import rpm; print(rpm.expandMacro("%{_dbpath}"))'],
         chroot = self.chroot,
         pipe = sh.READ,
         env = self.yum_conf.env,

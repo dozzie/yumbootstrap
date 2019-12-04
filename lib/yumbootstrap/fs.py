@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import os
 import stat
@@ -29,7 +29,7 @@ def mkchardev(*path, **kwargs):
   mkdir(os.path.dirname(new_file))
   major = kwargs["major"]
   minor = kwargs["minor"]
-  mode = kwargs.get("mode", 0666)
+  mode = kwargs.get("mode", 0o666)
 
   try:
     info = os.stat(new_file)

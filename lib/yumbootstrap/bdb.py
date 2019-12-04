@@ -1,7 +1,7 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import sys
-import bsddb
+import bsddb3
 
 #-----------------------------------------------------------------------------
 
@@ -10,10 +10,10 @@ import bsddb
 # should be the same as Yum/RPM use)
 def db_dump(filename, outfile = sys.stdout):
   try:
-    f = bsddb.hashopen(filename, 'r')
+    f = bsddb3.hashopen(filename, 'r')
     db_type = "hash"
   except:
-    f = bsddb.btopen(filename, 'r')
+    f = bsddb3.btopen(filename, 'r')
     db_type = "btree"
 
   outfile.write("VERSION=3\n") # magic

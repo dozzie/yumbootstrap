@@ -50,13 +50,13 @@ Installing yumbootstrap
 -----------------------
 
 For Debian-based distributions, *dpkg-dev*, *fakeroot*, *debhelper* (9+),
-*python*, and *python-setuptools*. For installing the package, *yum* is also
+*python3*, and *python3-setuptools*. For installing the package, *yum* is also
 required.
 
     dpkg-buildpackage -b -uc
     dpkg -i ../yumbootstrap*.deb
 
-For Red Hat derivatives you need *rpm-build*.
+For Red Hat derivatives you need *rpm-build* and *python3-setuptools*.
 
     make srpm
     rpmbuild --rebuild yumbootstrap-*.src.rpm

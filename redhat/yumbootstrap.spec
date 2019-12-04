@@ -2,7 +2,8 @@
 %define _release 1
 %define _packager Stanislaw Klekot <dozzie@jarowit.net>
 
-%define python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")
+%{!?__python3: %global __python3 /usr/bin/python3}
+%{!?python3_sitelib: %global python3_sitelib %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 
 Summary: yumbootstrap - chroot installer for Red Hat derivatives
 Name: yumbootstrap
@@ -16,8 +17,10 @@ URL: http://dozzie.jarowit.net/trac/wiki/yumbootstrap
 BuildArch: noarch
 Packager: %{_packager}
 Prefix: %{_prefix}
-BuildRequires: python-setuptools
+BuildRequires: python3-setuptools
 Requires: yum >= 3.0
+%{?el7:Requires: python36-bsddb3, python36-rpm}
+%{?el8:Requires: python3-bsddb3}
 
 %description
 yumbootstrap is a tool for installing Yum-based distributions (Red Hat,
@@ -28,11 +31,11 @@ debootstrap.
 %setup -q
 
 %build
-CFLAGS="$RPM_OPT_FLAGS" %{__python} setup.py build
+CFLAGS="$RPM_OPT_FLAGS" %{__python3} setup.py build
 
 %install
 [ "$RPM_BUILD_ROOT" != "/" ] && rm -rf "$RPM_BUILD_ROOT"
-%{__python} setup.py install --root "$RPM_BUILD_ROOT"
+%{__python3} setup.py install --root "$RPM_BUILD_ROOT"
 make install-notmodule \
   DESTDIR="$RPM_BUILD_ROOT" \
   BINDIR=%{_sbindir} SYSCONFDIR=%{_sysconfdir}
@@ -51,8 +54,8 @@ cp KNOWN_ISSUES.md LICENSE README.md SUITES.md TODO \
 %{_sysconfdir}/yumbootstrap
 #%{_mandir}/man8
 %{_docdir}/yumbootstrap-%{_version}
-%{python_sitearch}/yumbootstrap
-%{python_sitearch}/yumbootstrap-*.egg-info
+%{python3_sitelib}/yumbootstrap
+%{python3_sitelib}/yumbootstrap-*.egg-info
 
 
 # %changelog

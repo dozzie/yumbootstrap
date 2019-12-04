@@ -2,13 +2,13 @@ Source: yumbootstrap
 Maintainer: Stanislaw Klekot <dozzie@jarowit.net>
 Section: admin
 Priority: extra
-Build-Depends: debhelper (>> 9.0.0), make, python, python-setuptools
+Build-Depends: debhelper (>> 9.0.0), make, python3, python3-setuptools
 # the version is just a wild guess
-X-Python-Version: >= 2.3
+X-Python-Version: >= 3.4
 
 Package: yumbootstrap
 Architecture: all
-Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, yum (>> 3.0)
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends}, yum (>> 3.0)
 Description: Yum-based distributions chroot installer
  yumbootstrap is a tool for installing Yum-based distributions (Red Hat,
  CentOS, Fedora) in a chroot directory. Idea behind it is stolen from Debian's
