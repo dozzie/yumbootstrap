@@ -75,6 +75,7 @@ def run(command, chroot = None, pipe = None, env = None):
       env = env,
       stdin = open('/dev/null'),
       preexec_fn = chroot_fun,
+      encoding = "utf-8",
     )
     proc.wait()
     check_error(command[0], proc.returncode)
@@ -85,6 +86,7 @@ def run(command, chroot = None, pipe = None, env = None):
       stdin = open('/dev/null'),
       stdout = subprocess.PIPE,
       preexec_fn = chroot_fun,
+      encoding = "utf-8",
     )
     (result,_) = proc.communicate()
     check_error(command[0], proc.returncode)
@@ -95,6 +97,7 @@ def run(command, chroot = None, pipe = None, env = None):
       env = env,
       stdin = subprocess.PIPE,
       preexec_fn = chroot_fun,
+      encoding = "utf-8",
     )
     return OutPipe(command[0], proc)
 
