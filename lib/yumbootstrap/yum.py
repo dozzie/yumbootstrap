@@ -1,4 +1,3 @@
-import rpm as rpm_mod
 import os
 import shutil
 
@@ -144,12 +143,25 @@ class Yum:
     shutil.rmtree(self.yum_conf.root_dir, ignore_errors = True)
 
   def fix_rpmdb(self, expected_rpmdb_dir = None,
-                python = 'python', db_load = 'db_load', rpm = 'rpm'):
+                db_load = 'db_load', rpm = 'rpm'):
     logger.info("fixing RPM database for guest")
-    current_rpmdb_dir = rpm_mod.expandMacro('%{_dbpath}')
+
+    if os.path.exists('/usr/libexec/platform-python'):
+        platform_python = '/usr/libexec/platform-python'
+    else:
+        # On debian-based systems, use default python
+        platform_python = 'python'
+
+    # Call platform-python to be sure that rpm module can be loaded
+    current_rpmdb_dir = sh.run(
+        [platform_python, '-c', 'import rpm; print(rpm.expandMacro("%{_dbpath}"))'],
+        pipe = sh.READ,
+        env = self.yum_conf.env,
+      ).strip()
+
     if expected_rpmdb_dir is None:
       expected_rpmdb_dir = sh.run(
-        [python, '-c', 'import rpm; print(rpm.expandMacro("%{_dbpath}"))'],
+        ['/usr/libexec/platform-python', '-c', 'import rpm; print(rpm.expandMacro("%{_dbpath}"))'],
         chroot = self.chroot,
         pipe = sh.READ,
         env = self.yum_conf.env,
