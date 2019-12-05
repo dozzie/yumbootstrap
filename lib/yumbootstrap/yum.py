@@ -1,7 +1,6 @@
 import os
 import shutil
 
-import yumbootstrap.bdb as bdb
 import yumbootstrap.sh as sh
 import yumbootstrap.fs as fs
 
@@ -146,13 +145,12 @@ class Yum:
                 db_load = 'db_load', rpm = 'rpm'):
     logger.info("fixing RPM database for guest")
 
+    # use platform-python if available to read rpm dbpath
     if os.path.exists('/usr/libexec/platform-python'):
         platform_python = '/usr/libexec/platform-python'
     else:
-        # On debian-based systems, use default python
         platform_python = 'python'
 
-    # Call platform-python to be sure that rpm module can be loaded
     current_rpmdb_dir = sh.run(
         [platform_python, '-c', 'import rpm; print(rpm.expandMacro("%{_dbpath}"))'],
         pipe = sh.READ,
@@ -171,16 +169,25 @@ class Yum:
     rpmdb_dir = os.path.join(self.chroot, current_rpmdb_dir.lstrip('/'))
 
     logger.info('converting "Packages" file')
+
     in_pkg_db = os.path.join(rpmdb_dir, 'Packages')
     tmp_pkg_db = os.path.join(expected_rpmdb_dir, 'Packages.tmp')
     out_pkg_db = os.path.join(expected_rpmdb_dir, 'Packages')
+
+    in_command = sh.run(
+      ['db_dump', in_pkg_db],
+      pipe = sh.READ,
+      env = self.yum_conf.env,
+    )
     out_command = sh.run(
       [db_load, tmp_pkg_db],
       chroot = self.chroot, pipe = sh.WRITE,
       env = self.yum_conf.env,
     )
-    bdb.db_dump(in_pkg_db, out_command)
+    for line in in_command:
+        out_command.write(line)
     out_command.close()
+
     os.rename(
       os.path.join(self.chroot, tmp_pkg_db.lstrip('/')),
       os.path.join(self.chroot, out_pkg_db.lstrip('/'))

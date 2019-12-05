@@ -19,8 +19,6 @@ Packager: %{_packager}
 Prefix: %{_prefix}
 BuildRequires: python3-setuptools
 Requires: yum >= 3.0
-%{?el7:Requires: python36-bsddb3}
-%{?el8:Requires: python3-bsddb3}
 
 %description
 yumbootstrap is a tool for installing Yum-based distributions (Red Hat,
