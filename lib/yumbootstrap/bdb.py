@@ -24,12 +24,12 @@ def db_dump(filename, outfile = sys.stdout):
   for (key,value) in f.iteritems():
     outfile.write(" ")
     for c in key:
-      outfile.write("%02x" % ord(c))
+      outfile.write("%02x" % c)
     outfile.write("\n")
 
     outfile.write(" ")
     for c in value:
-      outfile.write("%02x" % ord(c))
+      outfile.write("%02x" % c)
     outfile.write("\n")
   outfile.write("DATA=END\n")
 
