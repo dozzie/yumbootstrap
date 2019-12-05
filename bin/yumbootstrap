@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import os
 import sys
@@ -236,7 +236,7 @@ def read_cached_suite(target):
       suite_location['suite_name'],
     )
     return suite
-  except IOError, e:
+  except IOError as e:
     if e.errno == errno.ENOENT:
       raise YBError("\"%s\" is not a prepared target", target, exit = 1)
     else:
@@ -286,17 +286,17 @@ def do_install(opts, suite_name, target):
               suite.name, suite.release, target)
 
   logger.info("preparing empty /etc/fstab and /etc/mtab")
-  os.umask(022)
+  os.umask(0o22)
   # prepare target directory with an empty /etc/fstab
   touch(target, 'etc/fstab', text = '# empty fstab')
   touch(target, 'etc/mtab')
   mkdir(target, "dev/pts")
-  mkchardev(target, "dev/null",    mode = 0666, major = 1, minor = 3)
-  mkchardev(target, "dev/zero",    mode = 0666, major = 1, minor = 5)
-  mkchardev(target, "dev/full",    mode = 0666, major = 1, minor = 7)
-  mkchardev(target, "dev/random",  mode = 0666, major = 1, minor = 8)
-  mkchardev(target, "dev/urandom", mode = 0666, major = 1, minor = 9)
-  mkchardev(target, "dev/tty",     mode = 0666, major = 5, minor = 0)
+  mkchardev(target, "dev/null",    mode = 0o666, major = 1, minor = 3)
+  mkchardev(target, "dev/zero",    mode = 0o666, major = 1, minor = 5)
+  mkchardev(target, "dev/full",    mode = 0o666, major = 1, minor = 7)
+  mkchardev(target, "dev/random",  mode = 0o666, major = 1, minor = 8)
+  mkchardev(target, "dev/urandom", mode = 0o666, major = 1, minor = 9)
+  mkchardev(target, "dev/tty",     mode = 0o666, major = 5, minor = 0)
 
   if len(opts.repositories) > 0:
     logger.info("using custom repositories: %s",
@@ -361,7 +361,7 @@ def do_install(opts, suite_name, target):
 
 def do_list_suites(opts):
   for suite in yumbootstrap.suites.list_suites(opts.suite_dir):
-    print suite
+    print(suite)
 
 #-----------------------------------------------------------
 
@@ -371,7 +371,7 @@ def do_list_scripts(opts, target):
   else:
     suite = read_cached_suite(target)
   for name in suite.post_install.names():
-    print name
+    print(name)
 
 #-----------------------------------------------------------
 
@@ -424,8 +424,8 @@ try:
     o.error("unrecognized action: %s" % (opts.action,))
 except KeyboardInterrupt:
   pass
-except YBError, e:
-  print >>sys.stderr, e
+except YBError as e:
+  print(e, file=sys.stderr)
   sys.exit(e.code)
 
 #-----------------------------------------------------------------------------
