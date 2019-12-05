@@ -1,5 +1,3 @@
-#!/usr/bin/python3
-
 import rpm as rpm_mod
 import os
 import shutil

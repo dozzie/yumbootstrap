@@ -1,5 +1,3 @@
-#!/usr/bin/python3
-
 import os
 import subprocess
 from yumbootstrap.exceptions import YBError
