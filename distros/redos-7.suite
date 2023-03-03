@@ -3,7 +3,7 @@ release = 7
 
 gpg_key =  gpg/RPM-GPG-KEY-RED-SOFT
 
-packages = packages/${suite}.list
+packages = packages/common-redos.list
 
 [post_install]
 finalize = scripts/fix_rpmdb.py
