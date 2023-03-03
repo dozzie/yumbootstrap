@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import os
 import sys
@@ -361,7 +361,7 @@ def do_install(opts, suite_name, target):
 
 def do_list_suites(opts):
   for suite in yumbootstrap.suites.list_suites(opts.suite_dir):
-    print suite
+    print(suite)
 
 #-----------------------------------------------------------
 
@@ -371,7 +371,7 @@ def do_list_scripts(opts, target):
   else:
     suite = read_cached_suite(target)
   for name in suite.post_install.names():
-    print name
+    print(name)
 
 #-----------------------------------------------------------
 
