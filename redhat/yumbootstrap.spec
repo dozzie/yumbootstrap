@@ -4,6 +4,7 @@
 
 %define python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")
 
+
 Summary: yumbootstrap - chroot installer for Red Hat derivatives
 Name: yumbootstrap
 Version: %{_version}
@@ -12,7 +13,6 @@ Group: Development/Tools
 License: GPL v3
 Source0: yumbootstrap-%{_version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-root
-URL: http://dozzie.jarowit.net/trac/wiki/yumbootstrap
 BuildArch: noarch
 Packager: %{_packager}
 Prefix: %{_prefix}

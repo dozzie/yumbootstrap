@@ -429,4 +429,4 @@ except YBError, e:
   sys.exit(e.code)
 
 #-----------------------------------------------------------------------------
-# vim:ft=python
+# vim:ft=python3

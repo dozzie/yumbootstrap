@@ -12,9 +12,6 @@ make
 mktemp
 vim-minimal
 yum
-chkconfig
-plymouth
-rootfiles
 redos-release
 
 # required to fix RPM DB
