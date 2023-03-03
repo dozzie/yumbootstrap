@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import sys
 import bsddb
@@ -34,4 +34,4 @@ def db_dump(filename, outfile = sys.stdout):
   outfile.write("DATA=END\n")
 
 #-----------------------------------------------------------------------------
-# vim:ft=python
+# vim:ft=python3
