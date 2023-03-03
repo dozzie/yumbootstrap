@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import re
 import os
@@ -375,4 +375,4 @@ class Suite:
       section.add(**groups)
 
 #-----------------------------------------------------------------------------
-# vim:ft=python
+# vim:ft=python3
