@@ -151,7 +151,7 @@ class Yum:
     current_rpmdb_dir = rpm_mod.expandMacro('%{_dbpath}')
     if expected_rpmdb_dir is None:
       expected_rpmdb_dir = sh.run(
-        ['python3', '-c', 'import rpm; print rpm.expandMacro("%{_dbpath}")'],
+        ['python3', '-c', 'import rpm; print(rpm.expandMacro("%{_dbpath}"))'],
         chroot = self.chroot,
         pipe = sh.READ,
         env = self.yum_conf.env,
