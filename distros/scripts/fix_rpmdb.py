@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import os
 import time
@@ -27,4 +27,4 @@ yum = yumbootstrap.yum.Yum(chroot = os.environ['TARGET'])
 yum.fix_rpmdb()
 
 #-----------------------------------------------------------------------------
-# vim:ft=python
+# vim:ft=python3
