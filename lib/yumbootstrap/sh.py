@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import os
 import subprocess
@@ -99,4 +99,4 @@ def run(command, chroot = None, pipe = None, env = None):
     return OutPipe(command[0], proc)
 
 #-----------------------------------------------------------------------------
-# vim:ft=python
+# vim:ft=python3
