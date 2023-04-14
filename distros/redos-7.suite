@@ -1,0 +1,22 @@
+name = RedOS
+release = 7
+
+gpg_key =  gpg/RPM-GPG-KEY-RED-SOFT
+
+packages = packages/common-redos.list
+
+[post_install]
+finalize = scripts/fix_rpmdb.py
+finalize = scripts/clean_yumbootstrap.py
+
+[repositories]
+base         = https://repo1.red-soft.ru/redos/7.3/$basearch/os,https://mirror.yandex.ru/redos/7.3/$basearch/os,http://repo.red-soft.ru/redos/7.3/$basearch/os
+kernels      = https://repo1.red-soft.ru/redos/7.3/$basearch/kernels,https://mirror.yandex.ru/redos/7.3/$basearch/kernels,http://repo.red-soft.ru/redos/7.3/$basearch/kernels
+updates      = https://repo1.red-soft.ru/redos/7.3/$basearch/updates,https://mirror.yandex.ru/redos/7.3/$basearch/updates,http://repo.red-soft.ru/redos/7.3/$basearch/updates
+
+[environment]
+#PYTHONPATH=...
+#PYTHONPATH
+#SUDO_*
+
+# vim:ft=dosini

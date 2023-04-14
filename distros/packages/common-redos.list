@@ -1,0 +1,18 @@
+# subset from @Core
+coreutils
+bash
+grep
+gawk
+basesystem
+rpm
+initscripts
+iproute
+less
+make
+mktemp
+vim-minimal
+yum
+redos-release
+
+# required to fix RPM DB
+/usr/bin/db_load
